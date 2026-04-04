@@ -1,4 +1,4 @@
-package com.trionesdev.oca.core.shared.spectrometer.subsystem;
+package com.spectrometer.subsystem;
 
 import java.io.*;
 import java.nio.ByteBuffer;

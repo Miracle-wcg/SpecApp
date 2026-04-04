@@ -1,4 +1,4 @@
-package com.trionesdev.oca.core.shared.spectrometer.config
+package com.spectrometer.config
 
 class SpectrometerProperties {
     var serverIp: String = "192.168.1.105"

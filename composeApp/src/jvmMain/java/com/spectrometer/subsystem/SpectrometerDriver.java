@@ -1,7 +1,7 @@
-package com.trionesdev.oca.core.shared.spectrometer.subsystem;
+package com.spectrometer.subsystem;
 
-import com.trionesdev.oca.core.shared.spectrometer.config.SpectrometerProperties;
-import com.trionesdev.oca.core.shared.spectrometer.driver.AcquisitionDriverClient;
+import com.spectrometer.config.SpectrometerProperties;
+import com.spectrometer.driver.AcquisitionDriverClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -128,27 +128,47 @@ public class SpectrometerDriver {
 
     public ByteBuffer fetchControlStatus() throws IOException {
         lock.lock();
-        try { return boardOpened ? client.getControlStatus() : null; } finally { lock.unlock(); }
+        try {
+            return boardOpened ? client.getControlStatus() : null;
+        } finally {
+            lock.unlock();
+        }
     }
 
     public ByteBuffer fetchStatusDefinition() throws IOException {
         lock.lock();
-        try { return boardOpened ? client.getStatusDefinition() : null; } finally { lock.unlock(); }
+        try {
+            return boardOpened ? client.getStatusDefinition() : null;
+        } finally {
+            lock.unlock();
+        }
     }
 
     public ByteBuffer fetchCurrentStatus() throws IOException {
         lock.lock();
-        try { return boardOpened ? client.getStatus((byte) 0) : null; } finally { lock.unlock(); }
+        try {
+            return boardOpened ? client.getStatus((byte) 0) : null;
+        } finally {
+            lock.unlock();
+        }
     }
 
     public ByteBuffer fetchHealthStatusDefinition() throws IOException {
         lock.lock();
-        try { return boardOpened ? client.acqGetHealthMonitoringStatusDefinition() : null; } finally { lock.unlock(); }
+        try {
+            return boardOpened ? client.acqGetHealthMonitoringStatusDefinition() : null;
+        } finally {
+            lock.unlock();
+        }
     }
 
     public ByteBuffer fetchHealthStatus() throws IOException {
         lock.lock();
-        try { return boardOpened ? client.getHealthMonitoringStatus() : null; } finally { lock.unlock(); }
+        try {
+            return boardOpened ? client.getHealthMonitoringStatus() : null;
+        } finally {
+            lock.unlock();
+        }
     }
 
     public float[] fetchRawData(int source, int nPts, long timeoutMs) throws IOException, InterruptedException {
@@ -174,9 +194,18 @@ public class SpectrometerDriver {
         lock.lock();
         try {
             if (client != null) {
-                try { client.stopAcqusition(); } catch (Exception ignored) {}
-                try { client.closeBoard(); } catch (Exception ignored) {}
-                try { client.close(); } catch (Exception ignored) {}
+                try {
+                    client.stopAcqusition();
+                } catch (Exception ignored) {
+                }
+                try {
+                    client.closeBoard();
+                } catch (Exception ignored) {
+                }
+                try {
+                    client.close();
+                } catch (Exception ignored) {
+                }
             }
             tcpConnected = false;
             boardOpened = false;
@@ -187,8 +216,19 @@ public class SpectrometerDriver {
         }
     }
 
-    public boolean isTcpConnected() { return tcpConnected; }
-    public boolean isBoardOpened() { return boardOpened; }
-    public boolean isConnected() { return boardOpened; }
-    public AcquisitionDriverClient.BoardInformation getBoardInfo() { return boardInfo; }
+    public boolean isTcpConnected() {
+        return tcpConnected;
+    }
+
+    public boolean isBoardOpened() {
+        return boardOpened;
+    }
+
+    public boolean isConnected() {
+        return boardOpened;
+    }
+
+    public AcquisitionDriverClient.BoardInformation getBoardInfo() {
+        return boardInfo;
+    }
 }

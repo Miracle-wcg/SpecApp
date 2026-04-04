@@ -1,6 +1,7 @@
-package com.trionesdev.oca.core.shared.spectrometer.subsystem;
+package com.spectrometer.subsystem;
 
-import com.trionesdev.oca.core.shared.spectrometer.driver.StatusDefinition;
+
+import com.spectrometer.driver.StatusDefinition;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

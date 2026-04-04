@@ -1,4 +1,4 @@
-package com.trionesdev.oca.core.shared.spectrometer.model
+package com.spectrometer.model
 
 import java.time.LocalDateTime
 

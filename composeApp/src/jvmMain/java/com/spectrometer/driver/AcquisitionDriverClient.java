@@ -110,7 +110,7 @@
  * Initial revision.
  */
 
-package com.trionesdev.oca.core.shared.spectrometer.driver;
+package com.spectrometer.driver;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;

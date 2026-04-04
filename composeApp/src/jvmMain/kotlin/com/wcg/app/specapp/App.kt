@@ -46,7 +46,7 @@ fun App() {
                         AppScreen.Analysis -> AnalysisScreen(viewModel)
                         AppScreen.Setup -> SetupScreen(viewModel)
                         AppScreen.Settings -> SettingsScreen()
-                        AppScreen.History -> Text("History Screen (WIP)", color = TextWhite)
+//                        AppScreen.History -> Text("History Screen (WIP)", color = TextWhite)
                     }
                 }
             }
@@ -64,7 +64,6 @@ fun TopNavBar() {
         Spacer(modifier = Modifier.width(48.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-            Text("Connectivity", color = TextMuted, fontSize = 14.sp)
             Text(
                 "Instruments",
                 color = TextWhite,
@@ -72,7 +71,6 @@ fun TopNavBar() {
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.drawUnderline()
             )
-            Text("Diagnostics", color = TextMuted, fontSize = 14.sp)
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -141,7 +139,5 @@ fun Sidebar(currentScreen: AppScreen, onScreenSelected: (AppScreen) -> Unit, mod
         }
 
         Spacer(modifier = Modifier.weight(1f))
-        Text("?  Support", color = TextWhite, fontSize = 14.sp, modifier = Modifier.padding(vertical = 12.dp))
-        Text("ℹ  Help", color = TextWhite, fontSize = 14.sp)
     }
 }

@@ -47,7 +47,7 @@
  *
  */
 
-package com.trionesdev.oca.core.shared.spectrometer.driver;
+package com.spectrometer.driver;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;

@@ -1,10 +1,10 @@
-package com.trionesdev.oca.core.shared.spectrometer.facade;
+package com.spectrometer.facade;
 
-import com.trionesdev.oca.core.shared.spectrometer.config.SpectrometerProperties;
-import com.trionesdev.oca.core.shared.spectrometer.model.SpectrumResult;
-import com.trionesdev.oca.core.shared.spectrometer.subsystem.MetadataParser;
-import com.trionesdev.oca.core.shared.spectrometer.subsystem.SpectrometerDriver;
-import com.trionesdev.oca.core.shared.spectrometer.subsystem.SpectrumStorage;
+import com.spectrometer.config.SpectrometerProperties;
+import com.spectrometer.model.SpectrumResult;
+import com.spectrometer.subsystem.MetadataParser;
+import com.spectrometer.subsystem.SpectrometerDriver;
+import com.spectrometer.subsystem.SpectrumStorage;
 import com.trionesdev.oca.core.shared.spectrometer.utils.OSPathUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
