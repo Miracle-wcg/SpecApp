@@ -76,16 +76,8 @@ fun TopNavBar() {
         Spacer(modifier = Modifier.weight(1f))
 
         Column(horizontalAlignment = Alignment.End) {
-            Text("DEVICE IP: 192.168.1.102", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
-                Box(modifier = Modifier.size(6.dp).background(AccentCyan, RoundedCornerShape(50)))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Stable (Port: 5025)", color = AccentCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            }
         }
         Spacer(modifier = Modifier.width(24.dp))
-        Text("🔔", color = TextMuted)
-        Spacer(modifier = Modifier.width(16.dp))
         Box(
             modifier = Modifier.size(32.dp).background(PanelBg, RoundedCornerShape(50))
                 .border(1.dp, BorderDark, RoundedCornerShape(50)), contentAlignment = Alignment.Center

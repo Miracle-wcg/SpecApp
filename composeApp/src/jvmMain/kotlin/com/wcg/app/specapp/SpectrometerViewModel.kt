@@ -57,6 +57,28 @@ class SpectrometerViewModel {
         uiMessage = null
     }
 
+    // 【新增】：断开设备连接
+    fun disconnectHardware() {
+        scope.launch(Dispatchers.IO) {
+            try {
+                driver.disconnect()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                // 回到主线程重置所有 UI 状态
+                withContext(Dispatchers.Main) {
+                    isTcpConnected = false
+                    isBoardOpened = false
+                    connectionState = ConnectionState.Disconnected
+                    boardInfo = null
+                    firmwareVersion = "N/A"
+                    instrumentType = "N/A"
+                    uiMessage = "🔌 设备已安全断开连接"
+                }
+            }
+        }
+    }
+
     // 步骤 1：连接 TCP
     fun connectTcp() {
         scope.launch(Dispatchers.IO) {
@@ -91,7 +113,6 @@ class SpectrometerViewModel {
                     else -> "Unknown (${info.instrumentType})"
                 }
 
-                // 初始化元数据字典
                 driver.fetchStatusDefinition()?.let { parser.initTable(it) }
                 driver.fetchControlStatus()?.let { parser.initControlTable(it) }
 
@@ -114,13 +135,7 @@ class SpectrometerViewModel {
         }
         scope.launch(Dispatchers.IO) {
             try {
-                driver.configure(
-                    config.params.resolution,
-                    config.params.firstGain,
-                    config.params.secondGain,
-                    config.params.startWave,
-                    config.params.stopWave
-                )
+                driver.configure(config.params.resolution, config.params.firstGain, config.params.secondGain, config.params.startWave, config.params.stopWave)
                 uiMessage = "✅ 光学及扫描参数已成功下发至硬件"
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -138,6 +153,10 @@ class SpectrometerViewModel {
         totalSweeps = config.params.numScans
         currentSweep = 0
         progress = 0f
+
+        spectrumData = emptyList()
+        peakX = "0.00"
+        peakY = "0.000"
 
         scope.launch(Dispatchers.IO) {
             try {
@@ -164,13 +183,18 @@ class SpectrometerViewModel {
                 val rawData = driver.fetchRawData(SpectrometerDriver.SOURCE_FIFO, nPts, config.autoCollect.timeoutMs)
                 val metadata = parser.parseDynamicMetadata(statusBuf)
 
-                val xyData = storage.getSpectrumDataArray(
-                    rawData,
-                    metadata,
-                    config.laserFreq,
-                    config.params.startWave.toDouble(),
-                    config.params.stopWave.toDouble()
-                )
+                val savedPath = try {
+                    if (exportFormat == "SPC") {
+                        storage.saveToSpc(rawData, metadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble(), config.savePath)
+                    } else {
+                        storage.saveToTxt(rawData, metadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble(), config.savePath)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    "文件保存失败"
+                }
+
+                val xyData = storage.getSpectrumDataArray(rawData, metadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble())
 
                 if (xyData[0].isNotEmpty()) {
                     val points = xyData[0].zip(xyData[1]).toList()
@@ -183,7 +207,7 @@ class SpectrometerViewModel {
                             peakY = String.format("%.3f", maxPoint.second)
                         }
                         progress = 1f
-                        uiMessage = "🎉 采集完成！"
+                        uiMessage = "🎉 采集完成！数据已自动导出至: $savedPath"
                     }
                 }
             } catch (e: Exception) {

@@ -1,5 +1,6 @@
 package com.wcg.app.specapp
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -22,17 +23,15 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
     val config = viewModel.config
     val scrollState = rememberScrollState()
 
-    // 提示框状态
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // 监听 ViewModel 中的消息并触发 Snackbar
     LaunchedEffect(viewModel.uiMessage) {
         viewModel.uiMessage?.let {
             snackbarHostState.showSnackbar(
                 message = it,
                 duration = SnackbarDuration.Short
             )
-            viewModel.clearMessage() // 消费完毕后清除
+            viewModel.clearMessage()
         }
     }
 
@@ -54,21 +53,31 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
 
-            // --- 顶部标题 ---
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            // --- 顶部标题与操作区 ---
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column {
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text("仪器设置 ", color = TextWhite, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                        Text(
-                            "/ Instrument Setup",
-                            color = TextMuted,
-                            fontSize = 18.sp,
-                            modifier = Modifier.padding(bottom = 2.dp)
-                        )
+                        Text("/ Instrument Setup", color = TextMuted, fontSize = 18.sp, modifier = Modifier.padding(bottom = 2.dp))
+                    }
+                    // ===== 优化：全局状态展示 =====
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
+                        val isReady = viewModel.isBoardOpened
+                        val statusColor = if (isReady) Color(0xFF10B981) else WarningOrange
+                        Box(modifier = Modifier.size(8.dp).background(statusColor, RoundedCornerShape(50)))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(if (isReady) "设备已连接就绪 (ONLINE)" else "设备未连接 (OFFLINE)", color = statusColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                // ===== 优化：断开设备按钮 =====
+                if (viewModel.isTcpConnected || viewModel.isBoardOpened) {
+                    OutlinedButton(
+                        onClick = { viewModel.disconnectHardware() },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = DangerRed),
+                        border = BorderStroke(1.dp, DangerRed)
+                    ) {
+                        Text("断开连接设备", fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -91,149 +100,62 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                     // === 左列：通讯与参数 ===
                     Column(modifier = Modifier.weight(1.2f), verticalArrangement = Arrangement.spacedBy(20.dp)) {
 
-                        // 【步骤 1：TCP 连接】
                         SetupCard(title = "🌐 步骤 1：通讯配置 (TCP)", subtitle = "TCP COMMUNICATION") {
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                DarkTextField(
-                                    "SERVER IP",
-                                    serverIp,
-                                    { serverIp = it; config.serverIp = it },
-                                    Modifier.weight(1.5f)
-                                )
-                                DarkTextField(
-                                    "TCP PORT",
-                                    tcpPort,
-                                    { tcpPort = it; it.toIntOrNull()?.let { v -> config.tcpPort = v } },
-                                    Modifier.weight(1f)
-                                )
+                                DarkTextField("SERVER IP", serverIp, { serverIp = it; config.serverIp = it }, Modifier.weight(1.5f))
+                                DarkTextField("TCP PORT", tcpPort, { tcpPort = it; it.toIntOrNull()?.let { v -> config.tcpPort = v } }, Modifier.weight(1f))
                             }
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(
                                 onClick = { viewModel.connectTcp() },
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (viewModel.isTcpConnected) Color(
-                                        0xFF10B981
-                                    ) else AccentCyan
-                                )
+                                colors = ButtonDefaults.buttonColors(containerColor = if (viewModel.isTcpConnected) Color(0xFF10B981) else AccentCyan)
                             ) {
-                                Text(
-                                    if (viewModel.isTcpConnected) "✓ TCP 已连接" else "1. 建立基础 TCP 连接",
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (viewModel.isTcpConnected) TextWhite else BgDark
-                                )
+                                Text(if (viewModel.isTcpConnected) "✓ TCP 已连接" else "1. 建立基础 TCP 连接", fontWeight = FontWeight.Bold, color = if (viewModel.isTcpConnected) TextWhite else BgDark)
                             }
                         }
 
-                        // 【步骤 2：UDP 板卡连接】
                         SetupCard(title = "📡 步骤 2：板卡握手 (UDP)", subtitle = "BOARD INITIALIZATION") {
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                DarkTextField(
-                                    "BOARD NAME",
-                                    boardName,
-                                    { boardName = it; config.boardName = it },
-                                    Modifier.weight(1.5f)
-                                )
-                                DarkTextField(
-                                    "UDP PORT",
-                                    udpPort,
-                                    { udpPort = it; it.toIntOrNull()?.let { v -> config.udpPort = v } },
-                                    Modifier.weight(1f)
-                                )
+                                DarkTextField("BOARD NAME", boardName, { boardName = it; config.boardName = it }, Modifier.weight(1.5f))
+                                DarkTextField("UDP PORT", udpPort, { udpPort = it; it.toIntOrNull()?.let { v -> config.udpPort = v } }, Modifier.weight(1f))
                             }
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(
                                 onClick = { viewModel.openBoard() },
-                                enabled = viewModel.isTcpConnected, // TCP连接后才能打开板卡
+                                enabled = viewModel.isTcpConnected,
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (viewModel.isBoardOpened) Color(0xFF10B981) else Color(
-                                        0xFF2B3648
-                                    ),
-                                    disabledContainerColor = BgDark
-                                )
+                                colors = ButtonDefaults.buttonColors(containerColor = if (viewModel.isBoardOpened) Color(0xFF10B981) else Color(0xFF2B3648), disabledContainerColor = BgDark)
                             ) {
-                                Text(
-                                    if (viewModel.isBoardOpened) "✓ 板卡已就绪" else "2. 获取板卡信息并打开",
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (viewModel.isTcpConnected) TextWhite else TextMuted
-                                )
+                                Text(if (viewModel.isBoardOpened) "✓ 板卡已就绪" else "2. 获取板卡信息并打开", fontWeight = FontWeight.Bold, color = if (viewModel.isTcpConnected) TextWhite else TextMuted)
                             }
                         }
 
-                        // 【步骤 3：参数下发】
                         SetupCard(title = "☷ 步骤 3：扫描与光学参数", subtitle = "PARAMETERS & OPTICS") {
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                DarkTextField(
-                                    "START WAVE",
-                                    startWave,
-                                    { startWave = it; it.toFloatOrNull()?.let { v -> config.params.startWave = v } },
-                                    Modifier.weight(1f)
-                                )
-                                DarkTextField(
-                                    "STOP WAVE",
-                                    stopWave,
-                                    { stopWave = it; it.toFloatOrNull()?.let { v -> config.params.stopWave = v } },
-                                    Modifier.weight(1f)
-                                )
+                                DarkTextField("START WAVE", startWave, { startWave = it; it.toFloatOrNull()?.let { v -> config.params.startWave = v } }, Modifier.weight(1f))
+                                DarkTextField("STOP WAVE", stopWave, { stopWave = it; it.toFloatOrNull()?.let { v -> config.params.stopWave = v } }, Modifier.weight(1f))
                             }
                             Spacer(modifier = Modifier.height(16.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                DarkTextField(
-                                    "NUM SCANS (累加次数)",
-                                    numScans,
-                                    { numScans = it; it.toIntOrNull()?.let { v -> config.params.numScans = v } },
-                                    Modifier.weight(1f)
-                                )
-                                DarkTextField(
-                                    "NUM RUNS",
-                                    numRuns,
-                                    { numRuns = it; it.toIntOrNull()?.let { v -> config.params.numRuns = v } },
-                                    Modifier.weight(1f)
-                                )
-                                DarkTextField(
-                                    "LASER FREQ",
-                                    laserFreq,
-                                    { laserFreq = it; it.toDoubleOrNull()?.let { v -> config.laserFreq = v } },
-                                    Modifier.weight(1f)
-                                )
+                                DarkTextField("NUM SCANS (累加次数)", numScans, { numScans = it; it.toIntOrNull()?.let { v -> config.params.numScans = v } }, Modifier.weight(1f))
+                                DarkTextField("NUM RUNS", numRuns, { numRuns = it; it.toIntOrNull()?.let { v -> config.params.numRuns = v } }, Modifier.weight(1f))
+                                DarkTextField("LASER FREQ", laserFreq, { laserFreq = it; it.toDoubleOrNull()?.let { v -> config.laserFreq = v } }, Modifier.weight(1f))
                             }
                             Spacer(modifier = Modifier.height(16.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                DarkTextField(
-                                    "RESOLUTION",
-                                    resolution,
-                                    { resolution = it; it.toShortOrNull()?.let { v -> config.params.resolution = v } },
-                                    Modifier.weight(1f)
-                                )
-                                DarkTextField(
-                                    "FIRST GAIN",
-                                    firstGain,
-                                    { firstGain = it; it.toShortOrNull()?.let { v -> config.params.firstGain = v } },
-                                    Modifier.weight(1f)
-                                )
-                                DarkTextField(
-                                    "SECOND GAIN",
-                                    secondGain,
-                                    { secondGain = it; it.toShortOrNull()?.let { v -> config.params.secondGain = v } },
-                                    Modifier.weight(1f)
-                                )
+                                DarkTextField("RESOLUTION", resolution, { resolution = it; it.toShortOrNull()?.let { v -> config.params.resolution = v } }, Modifier.weight(1f))
+                                DarkTextField("FIRST GAIN", firstGain, { firstGain = it; it.toShortOrNull()?.let { v -> config.params.firstGain = v } }, Modifier.weight(1f))
+                                DarkTextField("SECOND GAIN", secondGain, { secondGain = it; it.toShortOrNull()?.let { v -> config.params.secondGain = v } }, Modifier.weight(1f))
                             }
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(
                                 onClick = { viewModel.applyParameters() },
-                                enabled = viewModel.isBoardOpened, // 板卡打开后才能下发
+                                enabled = viewModel.isBoardOpened,
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = WarningOrange,
-                                    disabledContainerColor = BgDark
-                                )
+                                colors = ButtonDefaults.buttonColors(containerColor = WarningOrange, disabledContainerColor = BgDark)
                             ) {
-                                Text(
-                                    "3. 下发参数至硬件并预热",
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (viewModel.isBoardOpened) BgDark else TextMuted
-                                )
+                                Text("3. 下发参数至硬件并预热", fontWeight = FontWeight.Bold, color = if (viewModel.isBoardOpened) BgDark else TextMuted)
                             }
                         }
                     }
@@ -246,29 +168,17 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                             InfoRow("Structure Version", viewModel.boardInfo?.structureVersion?.toString() ?: "N/A")
                             InfoRow("Max Channels", viewModel.boardInfo?.maximumChannel?.toString() ?: "N/A")
                             Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = {},
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2B3648))
-                            ) {
+                            Button(onClick = {}, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2B3648))) {
                                 Text("UPDATE FIRMWARE", fontSize = 11.sp)
                             }
                         }
 
                         SetupCard(title = "📁 存储与自动化", subtitle = "STORAGE") {
-                            Text(
-                                "DEFAULT EXPORT PATH (默认导出路径)",
-                                color = TextMuted,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Text("DEFAULT EXPORT PATH (默认导出路径)", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.height(4.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                DarkTextField("", savePath, {
-                                    savePath = it; config.savePath = it; config.savePathWindows = it
-                                }, Modifier.weight(1f))
+                                DarkTextField("", savePath, { savePath = it; config.savePath = it; config.savePathWindows = it }, Modifier.weight(1f))
                                 Spacer(modifier = Modifier.width(8.dp))
-                                // 原生文件夹选择器
                                 Button(
                                     onClick = {
                                         val chooser = JFileChooser(savePath).apply {
@@ -289,40 +199,15 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                             }
 
                             Spacer(modifier = Modifier.height(16.dp))
-                            DarkTextField(
-                                "ACQUISITION TIMEOUT (超时阈值 ms)",
-                                timeoutMs,
-                                { timeoutMs = it; it.toLongOrNull()?.let { v -> config.autoCollect.timeoutMs = v } },
-                                Modifier.fillMaxWidth()
-                            )
+                            DarkTextField("ACQUISITION TIMEOUT (超时阈值 ms)", timeoutMs, { timeoutMs = it; it.toLongOrNull()?.let { v -> config.autoCollect.timeoutMs = v } }, Modifier.fillMaxWidth())
 
                             Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                "DEFAULT DATA FORMAT",
-                                color = TextMuted,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Text("DEFAULT DATA FORMAT", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            // 动态格式切换
                             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                FormatBox(
-                                    ".SPC",
-                                    "High density binary",
-                                    viewModel.exportFormat == "SPC",
-                                    Modifier.weight(1f)
-                                ) {
-                                    viewModel.exportFormat = "SPC"
-                                }
-                                FormatBox(
-                                    ".TXT",
-                                    "Human readable",
-                                    viewModel.exportFormat == "TXT",
-                                    Modifier.weight(1f)
-                                ) {
-                                    viewModel.exportFormat = "TXT"
-                                }
+                                FormatBox(".SPC", "High density binary", viewModel.exportFormat == "SPC", Modifier.weight(1f)) { viewModel.exportFormat = "SPC" }
+                                FormatBox(".TXT", "Human readable", viewModel.exportFormat == "TXT", Modifier.weight(1f)) { viewModel.exportFormat = "TXT" }
                             }
                         }
                     }
@@ -330,33 +215,19 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
             }
         }
 
-        // --- 底部悬浮信息提示框 (Snackbar) ---
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp)
         ) { data ->
-            // 自定义 Snackbar 样式以契合暗黑工业风
-            Snackbar(
-                snackbarData = data,
-                containerColor = Color(0xFF1E2D4A),
-                contentColor = TextWhite,
-                shape = RoundedCornerShape(8.dp)
-            )
+            Snackbar(snackbarData = data, containerColor = Color(0xFF1E2D4A), contentColor = TextWhite, shape = RoundedCornerShape(8.dp))
         }
     }
 }
 
-// ========================
-// 新增：顶部连接状态指示器组件
-// ========================
 @Composable
 fun ConnectionPipelineBanner(isTcpOk: Boolean, isBoardOk: Boolean, isConfigOk: Boolean) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(PanelBg, RoundedCornerShape(8.dp))
-            .border(1.dp, BorderDark, RoundedCornerShape(8.dp))
-            .padding(16.dp),
+        modifier = Modifier.fillMaxWidth().background(PanelBg, RoundedCornerShape(8.dp)).border(1.dp, BorderDark, RoundedCornerShape(8.dp)).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
@@ -371,18 +242,9 @@ fun ConnectionPipelineBanner(isTcpOk: Boolean, isBoardOk: Boolean, isConfigOk: B
 @Composable
 fun StatusStep(step: String, isActive: Boolean) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(12.dp)
-                .background(if (isActive) Color(0xFF10B981) else Color(0xFF334155), RoundedCornerShape(50))
-        )
+        Box(modifier = Modifier.size(12.dp).background(if (isActive) Color(0xFF10B981) else Color(0xFF334155), RoundedCornerShape(50)))
         Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = step,
-            color = if (isActive) TextWhite else TextMuted,
-            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
-            fontSize = 14.sp
-        )
+        Text(text = step, color = if (isActive) TextWhite else TextMuted, fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal, fontSize = 14.sp)
     }
 }
 

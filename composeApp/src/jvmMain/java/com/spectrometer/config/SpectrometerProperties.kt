@@ -1,10 +1,10 @@
 package com.spectrometer.config
 
 class SpectrometerProperties {
-    var serverIp: String = "192.168.1.105"
-    var tcpPort: Int = 8080
+    var serverIp: String = "127.0.0.1"
+    var tcpPort: Int = 9000
     var udpPort: Int = 5025
-    var boardName: String = "SP-2000X"
+    var boardName: String = "MAC_00_02_2C_08_1F_82"
     var laserFreq: Double = 15798.0
     var savePath: String = "C:/SpectraData/Exports/"
     var savePathWindows: String = "C:/SpectraData/Exports/"
