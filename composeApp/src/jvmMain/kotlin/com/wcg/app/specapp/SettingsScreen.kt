@@ -6,7 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -16,6 +16,9 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun SettingsScreen() {
+    var password by remember { mutableStateOf("••••••••") }
+    var sessionTimeout by remember { mutableStateOf("30 Minutes") }
+
     Column(modifier = Modifier.fillMaxSize()) {
         Row(verticalAlignment = Alignment.Bottom) {
             Text("系统设置 ", color = TextWhite, fontSize = 24.sp, fontWeight = FontWeight.Bold)
@@ -58,9 +61,9 @@ fun SettingsScreen() {
             // 中列
             Column(modifier = Modifier.weight(0.8f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                 SetupCard(title = "🛡  安全与隐私", subtitle = "SECURITY", modifier = Modifier.weight(1f)) {
-                    DarkTextField("UPDATE PASSWORD 密码", "••••••••", Modifier.fillMaxWidth())
+                    DarkTextField("UPDATE PASSWORD 密码", password, { password = it }, Modifier.fillMaxWidth())
                     Spacer(modifier = Modifier.height(16.dp))
-                    DarkTextField("SESSION TIMEOUT (MIN)", "30 Minutes", Modifier.fillMaxWidth())
+                    DarkTextField("SESSION TIMEOUT (MIN)", sessionTimeout, { sessionTimeout = it }, Modifier.fillMaxWidth())
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = true, onCheckedChange = {}, colors = CheckboxDefaults.colors(checkedColor = AccentCyan))

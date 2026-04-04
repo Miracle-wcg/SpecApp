@@ -8,7 +8,9 @@ plugins {
 }
 
 kotlin {
-    jvm()
+    jvm{
+        withJava()
+    }
 
     sourceSets {
         commonMain.dependencies {
@@ -25,6 +27,10 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
+
+            // --- 新增日志框架依赖 ---
+            implementation("org.slf4j:slf4j-api:2.0.12")
+            implementation("ch.qos.logback:logback-classic:1.5.3")
         }
     }
 }

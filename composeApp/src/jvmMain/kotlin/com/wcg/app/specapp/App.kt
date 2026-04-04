@@ -44,7 +44,7 @@ fun App() {
                 Box(modifier = Modifier.weight(1f).fillMaxHeight().padding(24.dp)) {
                     when (viewModel.currentScreen) {
                         AppScreen.Analysis -> AnalysisScreen(viewModel)
-                        AppScreen.Setup -> SetupScreen()
+                        AppScreen.Setup -> SetupScreen(viewModel)
                         AppScreen.Settings -> SettingsScreen()
                         AppScreen.History -> Text("History Screen (WIP)", color = TextWhite)
                     }

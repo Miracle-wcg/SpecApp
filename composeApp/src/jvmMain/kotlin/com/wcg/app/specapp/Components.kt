@@ -2,9 +2,13 @@ package com.wcg.app.specapp
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -14,10 +18,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun SetupCard(title: String, subtitle: String, modifier: Modifier = Modifier, actionText: String? = null, content: @Composable () -> Unit) {
-    Column(modifier = modifier.fillMaxWidth().background(PanelBg, RoundedCornerShape(8.dp)).border(1.dp, BorderDark, RoundedCornerShape(8.dp)).padding(24.dp)) {
+fun SetupCard(
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+    actionText: String? = null,
+    content: @Composable () -> Unit
+) {
+    Column(
+        modifier = modifier.fillMaxWidth().background(PanelBg, RoundedCornerShape(8.dp))
+            .border(1.dp, BorderDark, RoundedCornerShape(8.dp)).padding(24.dp)
+    ) {
         if (title.isNotEmpty()) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(title, color = TextWhite, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.width(8.dp))
@@ -34,41 +51,74 @@ fun SetupCard(title: String, subtitle: String, modifier: Modifier = Modifier, ac
 }
 
 @Composable
-fun DarkTextField(label: String, value: String, modifier: Modifier = Modifier) {
+fun DarkTextField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit, // 新增：状态更新回调
+    modifier: Modifier = Modifier
+) {
     Column(modifier) {
         if (label.isNotEmpty()) {
             Text(label, color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(4.dp))
         }
         OutlinedTextField(
-            value = value, onValueChange = {}, readOnly = true, singleLine = true,
-            modifier = Modifier.fillMaxWidth().height(48.dp),
+            value = value,
+            onValueChange = onValueChange, // 绑定回调
+            readOnly = false,              // 允许输入
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(), // 移除高度限制解决文字遮挡
+            textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
             colors = OutlinedTextFieldDefaults.colors(
                 unfocusedBorderColor = BorderDark,
+                focusedBorderColor = AccentCyan,
                 unfocusedTextColor = TextWhite,
-                unfocusedContainerColor = BgDark
-            )
+                focusedTextColor = TextWhite,
+                unfocusedContainerColor = BgDark,
+                focusedContainerColor = BgDark
+            ),
+            shape = RoundedCornerShape(4.dp)
         )
     }
 }
 
 @Composable
 fun SetupRowItem(title: String, subtitle: String, content: @Composable () -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(title, color = TextWhite, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-            if (subtitle.isNotEmpty()) Text(subtitle, color = TextMuted, fontSize = 10.sp, modifier = Modifier.padding(top = 4.dp))
+            if (subtitle.isNotEmpty()) Text(
+                subtitle,
+                color = TextMuted,
+                fontSize = 10.sp,
+                modifier = Modifier.padding(top = 4.dp)
+            )
         }
         content()
     }
 }
 
 @Composable
-fun FormatBox(title: String, desc: String, isSelected: Boolean, modifier: Modifier) {
-    Box(modifier = modifier.border(1.dp, if (isSelected) AccentCyan else BorderDark, RoundedCornerShape(6.dp)).background(if (isSelected) Color(0xFF1E2D4A) else Color.Transparent).padding(16.dp)) {
+fun FormatBox(title: String, desc: String, isSelected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    Box(
+        modifier = modifier
+        .border(1.dp, if (isSelected) AccentCyan else BorderDark, RoundedCornerShape(6.dp))
+        .background(if (isSelected) Color(0xFF1E2D4A) else Color.Transparent)
+        .clickable { onClick() } // 加入点击响应
+        .padding(16.dp)) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
             Text(title, color = TextWhite, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            Text(desc, color = TextMuted, fontSize = 10.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.padding(top = 4.dp))
+            Text(
+                desc,
+                color = TextMuted,
+                fontSize = 10.sp,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.padding(top = 4.dp)
+            )
         }
     }
 }
