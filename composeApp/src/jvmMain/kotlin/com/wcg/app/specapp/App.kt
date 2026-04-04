@@ -1,47 +1,83 @@
 package com.wcg.app.specapp
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Usb
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import org.jetbrains.compose.resources.painterResource
+import androidx.compose.ui.unit.dp
+import com.wcg.app.specapp.data.DeviceManager
+import com.wcg.app.specapp.data.SettingsManager
+import com.wcg.app.specapp.data.SpectrumRepository
+import com.wcg.app.specapp.ui.screens.*
 
-import specapp.composeapp.generated.resources.Res
-import specapp.composeapp.generated.resources.compose_multiplatform
+private enum class AppScreen(val label: String) {
+    SPECTRUM("光谱"),
+    DEVICE("设备"),
+    DATA("数据"),
+    SETTINGS("设置")
+}
 
 @Composable
 @Preview
 fun App() {
-    MaterialTheme {
-        var showContent by remember { mutableStateOf(false) }
-        Column(
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .safeContentPadding()
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Button(onClick = { showContent = !showContent }) {
-                Text("Click me!")
-            }
-            AnimatedVisibility(showContent) {
-                val greeting = remember { Greeting().greet() }
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Image(painterResource(Res.drawable.compose_multiplatform), null)
-                    Text("Compose: $greeting")
+    // shared singletons
+    val settings = remember { SettingsManager.load() }
+    val deviceManager = remember { DeviceManager() }
+    val repository = remember { SpectrumRepository(settings) }
+
+    // view models
+    val spectrumVm = remember { SpectrumViewModel(deviceManager, repository, settings) }
+    val deviceVm = remember { DeviceViewModel(deviceManager, settings) }
+    val dataVm = remember { DataViewModel(repository) }
+    val settingsVm = remember { SettingsViewModel() }
+
+    var selectedScreen by remember { mutableStateOf(AppScreen.SPECTRUM) }
+
+    MaterialTheme(colorScheme = lightColorScheme()) {
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            Row(modifier = Modifier.fillMaxSize()) {
+                // ── navigation rail ─────────────────────────────────────────────
+                NavigationRail(modifier = Modifier.fillMaxHeight()) {
+                    Spacer(Modifier.height(8.dp))
+                    AppScreen.entries.forEach { screen ->
+                        NavigationRailItem(
+                            selected = selectedScreen == screen,
+                            onClick = { selectedScreen = screen },
+                            icon = {
+                                Icon(
+                                    imageVector = when (screen) {
+                                        AppScreen.SPECTRUM -> Icons.Filled.BarChart
+                                        AppScreen.DEVICE   -> Icons.Filled.Usb
+                                        AppScreen.DATA     -> Icons.Filled.FolderOpen
+                                        AppScreen.SETTINGS -> Icons.Filled.Settings
+                                    },
+                                    contentDescription = screen.label
+                                )
+                            },
+                            label = { Text(screen.label) }
+                        )
+                    }
+                }
+
+                VerticalDivider()
+
+                // ── content ─────────────────────────────────────────────────────
+                Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                    when (selectedScreen) {
+                        AppScreen.SPECTRUM -> SpectrumScreen(spectrumVm)
+                        AppScreen.DEVICE   -> DeviceScreen(deviceVm)
+                        AppScreen.DATA     -> DataScreen(dataVm) { sp ->
+                            spectrumVm.addOverlay(sp)
+                            selectedScreen = AppScreen.SPECTRUM
+                        }
+                        AppScreen.SETTINGS -> SettingsScreen(settingsVm)
+                    }
                 }
             }
         }
