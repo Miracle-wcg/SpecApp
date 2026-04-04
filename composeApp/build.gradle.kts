@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -26,7 +27,10 @@ kotlin {
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
+            implementation(compose.materialIconsExtended)
             implementation(libs.kotlinx.coroutinesSwing)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.jSerialComm)
         }
     }
 }
