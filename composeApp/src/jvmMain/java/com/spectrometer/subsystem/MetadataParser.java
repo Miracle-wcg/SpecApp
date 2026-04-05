@@ -1,7 +1,8 @@
 package com.spectrometer.subsystem;
 
-
 import com.spectrometer.driver.StatusDefinition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -10,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class MetadataParser {
+    private static final Logger log = LoggerFactory.getLogger(MetadataParser.class);
 
     public static final String INST_SPC_NPTS = "Inst. Spc Npts";
     private StatusDefinition statusTable;
@@ -24,13 +26,8 @@ public class MetadataParser {
         healthStatusTable = parseDefinitionTable(healthDefBuffer);
     }
 
-    /**
-     * 【新增】：初始化控制状态表映射 (Cmd 38 返回的结构)
-     */
     public void initControlTable(ByteBuffer ctrlBuf) {
-        if (ctrlBuf == null) {
-            return;
-        }
+        if (ctrlBuf == null) return;
         ctrlBuf.order(ByteOrder.LITTLE_ENDIAN);
         ctrlBuf.position(0);
         float version = ctrlBuf.getFloat();
@@ -42,9 +39,7 @@ public class MetadataParser {
     }
 
     private StatusDefinition parseDefinitionTable(ByteBuffer buffer) {
-        if (buffer == null) {
-            return null;
-        }
+        if (buffer == null) return null;
         buffer.position(0);
         float version = buffer.getFloat();
         int size = buffer.getInt();
@@ -63,9 +58,7 @@ public class MetadataParser {
     }
 
     public int extractNpts(ByteBuffer statusBuffer) {
-        if (statusTable == null || statusBuffer == null) {
-            return 0;
-        }
+        if (statusTable == null || statusBuffer == null) return 0;
         for (int i = 0; i < statusTable.size; i++) {
             if (INST_SPC_NPTS.equalsIgnoreCase(statusTable.status[i].name.trim())) {
                 statusBuffer.position(statusTable.status[i].index);
@@ -75,32 +68,21 @@ public class MetadataParser {
         return 0;
     }
 
-    /**
-     * 【新增】：精准提取控制状态数值 (如 Coadd State)
-     */
     public Number extractControlValue(ByteBuffer statusBuf, int controlId) {
-        if (controlStatusIndex == null || controlId < 0 || controlId >= controlStatusIndex.length) {
-            return 0;
-        }
+        if (controlStatusIndex == null || controlId < 0 || controlId >= controlStatusIndex.length) return 0;
         int tableIndex = controlStatusIndex[controlId];
-        if (statusTable == null || tableIndex < 0 || tableIndex >= statusTable.size) {
-            return 0;
-        }
+        if (statusTable == null || tableIndex < 0 || tableIndex >= statusTable.size) return 0;
         StatusDefinition.Status stat = statusTable.status[tableIndex];
         return extractNumericValue(statusBuf, stat);
     }
 
     public Map<String, String> parseDynamicMetadata(ByteBuffer statusBuffer) {
         Map<String, String> result = new LinkedHashMap<>();
-        if (statusTable == null || statusBuffer == null) {
-            return result;
-        }
+        if (statusTable == null || statusBuffer == null) return result;
 
         for (int i = 0; i < statusTable.size; i++) {
             StatusDefinition.Status stat = statusTable.status[i];
-            if (stat.name == null || stat.name.trim().isEmpty()) {
-                continue;
-            }
+            if (stat.name == null || stat.name.trim().isEmpty()) continue;
             result.put(stat.name.trim(), extractValueStr(statusBuffer, stat));
         }
         return result;
@@ -108,55 +90,53 @@ public class MetadataParser {
 
     public Map<String, Object> parseHealthMonitoring(ByteBuffer defBuf, ByteBuffer statusBuf) {
         Map<String, Object> report = new LinkedHashMap<>();
-        if (defBuf == null || statusBuf == null) {
-            return report;
-        }
+        if (defBuf == null || statusBuf == null) return report;
 
-        defBuf.order(ByteOrder.LITTLE_ENDIAN);
-        statusBuf.order(ByteOrder.LITTLE_ENDIAN);
+        // 【安全修复】：捕捉底层越界异常防止奔溃，并归零游标防止二次点击无数据
+        try {
+            defBuf.order(ByteOrder.LITTLE_ENDIAN);
+            statusBuf.order(ByteOrder.LITTLE_ENDIAN);
 
-        defBuf.position(0);
-        float version = defBuf.getFloat();
-        int groupNumber = defBuf.getInt();
+            defBuf.position(0);
+            statusBuf.position(0); // 必须归零，否则第二次检查时指针在末尾会导致查无数据
 
-        for (int i = 0; i < groupNumber; i++) {
-            int itemNumber = defBuf.getInt();
-            String groupName = getHealthString(defBuf, 64);
-            int groupIndex = defBuf.getInt();
+            float version = defBuf.getFloat();
+            int groupNumber = defBuf.getInt();
 
-            if (groupName.toLowerCase().contains("ir source")) {
+            for (int i = 0; i < groupNumber; i++) {
+                int itemNumber = defBuf.getInt();
+                String groupName = getHealthString(defBuf, 64);
+                int groupIndex = defBuf.getInt();
+
+                byte groupState = 0;
+                if (groupIndex >= 0 && groupIndex < statusBuf.limit()) {
+                    statusBuf.position(groupIndex);
+                    groupState = statusBuf.get();
+                }
+
+                Map<String, Object> groupData = new LinkedHashMap<>();
+                groupData.put("state", (int) groupState);
+                groupData.put("isHealthy", groupState == 0);
+
+                Map<String, String> items = new LinkedHashMap<>();
                 for (int j = 0; j < itemNumber; j++) {
-                    getHealthString(defBuf, 64);
-                    defBuf.getInt();
+                    String itemName = getHealthString(defBuf, 64);
+                    int itemIndex = defBuf.getInt();
+
+                    byte itemState = 0;
+                    if (itemIndex >= 0 && itemIndex < statusBuf.limit()) {
+                        statusBuf.position(itemIndex);
+                        itemState = statusBuf.get();
+                    }
+                    items.put(itemName, String.valueOf(itemState));
                 }
-                continue;
+                groupData.put("details", items);
+                report.put(groupName, groupData);
             }
-
-            byte groupState = 0;
-            if (groupIndex >= 0 && groupIndex < statusBuf.limit()) {
-                statusBuf.position(groupIndex);
-                groupState = statusBuf.get();
-            }
-
-            Map<String, Object> groupData = new LinkedHashMap<>();
-            groupData.put("state", (int) groupState);
-            groupData.put("isHealthy", groupState == 0);
-
-            Map<String, String> items = new LinkedHashMap<>();
-            for (int j = 0; j < itemNumber; j++) {
-                String itemName = getHealthString(defBuf, 64);
-                int itemIndex = defBuf.getInt();
-
-                byte itemState = 0;
-                if (itemIndex >= 0 && itemIndex < statusBuf.limit()) {
-                    statusBuf.position(itemIndex);
-                    itemState = statusBuf.get();
-                }
-                items.put(itemName, String.valueOf(itemState));
-            }
-            groupData.put("details", items);
-            report.put(groupName, groupData);
+        } catch (Exception e) {
+            log.error("解析硬件健康监控数据异常，可能游标越界", e);
         }
+
         return report;
     }
 
@@ -182,34 +162,23 @@ public class MetadataParser {
 
         buffer.position(stat.index);
         switch (stat.type) {
-            case StatusDefinition.TYPE_BYTE:
-                return buffer.get();
-            case StatusDefinition.TYPE_SHORT:
-                return buffer.getShort();
-            case StatusDefinition.TYPE_INT:
-                return buffer.getInt();
-            case StatusDefinition.TYPE_FLOAT:
-                return buffer.getFloat();
-            case StatusDefinition.TYPE_DOUBLE:
-                return buffer.getDouble();
-            default:
-                return 0;
+            case StatusDefinition.TYPE_BYTE: return buffer.get();
+            case StatusDefinition.TYPE_SHORT: return buffer.getShort();
+            case StatusDefinition.TYPE_INT: return buffer.getInt();
+            case StatusDefinition.TYPE_FLOAT: return buffer.getFloat();
+            case StatusDefinition.TYPE_DOUBLE: return buffer.getDouble();
+            default: return 0;
         }
     }
 
     private int getDataTypeSize(byte type) {
         switch (type) {
-            case StatusDefinition.TYPE_BYTE:
-                return 1;
-            case StatusDefinition.TYPE_SHORT:
-                return 2;
+            case StatusDefinition.TYPE_BYTE: return 1;
+            case StatusDefinition.TYPE_SHORT: return 2;
             case StatusDefinition.TYPE_INT:
-            case StatusDefinition.TYPE_FLOAT:
-                return 4;
-            case StatusDefinition.TYPE_DOUBLE:
-                return 8;
-            default:
-                return 0;
+            case StatusDefinition.TYPE_FLOAT: return 4;
+            case StatusDefinition.TYPE_DOUBLE: return 8;
+            default: return 0;
         }
     }
 

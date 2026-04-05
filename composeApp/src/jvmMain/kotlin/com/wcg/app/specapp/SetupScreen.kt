@@ -22,15 +22,11 @@ import javax.swing.JFileChooser
 fun SetupScreen(viewModel: SpectrometerViewModel) {
     val config = viewModel.config
     val scrollState = rememberScrollState()
-
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(viewModel.uiMessage) {
         viewModel.uiMessage?.let {
-            snackbarHostState.showSnackbar(
-                message = it,
-                duration = SnackbarDuration.Short
-            )
+            snackbarHostState.showSnackbar(message = it, duration = SnackbarDuration.Short)
             viewModel.clearMessage()
         }
     }
@@ -53,14 +49,12 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
 
-            // --- 顶部标题与操作区 ---
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column {
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text("仪器设置 ", color = TextWhite, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                         Text("/ Instrument Setup", color = TextMuted, fontSize = 18.sp, modifier = Modifier.padding(bottom = 2.dp))
                     }
-                    // ===== 优化：全局状态展示 =====
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
                         val isReady = viewModel.isBoardOpened
                         val statusColor = if (isReady) Color(0xFF10B981) else WarningOrange
@@ -70,7 +64,6 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                     }
                 }
 
-                // ===== 优化：断开设备按钮 =====
                 if (viewModel.isTcpConnected || viewModel.isBoardOpened) {
                     OutlinedButton(
                         onClick = { viewModel.disconnectHardware() },
@@ -84,16 +77,10 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // --- 全局连接状态指示条 ---
-            ConnectionPipelineBanner(
-                isTcpOk = viewModel.isTcpConnected,
-                isBoardOk = viewModel.isBoardOpened,
-                isConfigOk = viewModel.connectionState == ConnectionState.Ready
-            )
+            ConnectionPipelineBanner(isTcpOk = viewModel.isTcpConnected, isBoardOk = viewModel.isBoardOpened, isConfigOk = viewModel.isConfigApplied)
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- 滚动参数配置区 ---
             Column(modifier = Modifier.weight(1f).verticalScroll(scrollState).padding(bottom = 80.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
 
@@ -153,23 +140,85 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                                 onClick = { viewModel.applyParameters() },
                                 enabled = viewModel.isBoardOpened,
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(containerColor = WarningOrange, disabledContainerColor = BgDark)
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (viewModel.isConfigApplied) Color(0xFF10B981) else WarningOrange,
+                                    disabledContainerColor = BgDark
+                                )
                             ) {
-                                Text("3. 下发参数至硬件并预热", fontWeight = FontWeight.Bold, color = if (viewModel.isBoardOpened) BgDark else TextMuted)
+                                Text(
+                                    text = if (viewModel.isConfigApplied) "✓ 参数已下发就绪" else "3. 下发参数至硬件并预热",
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (viewModel.isConfigApplied) TextWhite else if (viewModel.isBoardOpened) BgDark else TextMuted
+                                )
                             }
                         }
                     }
 
-                    // === 右列：身份反馈与存储 ===
+                    // === 右列：身份反馈与监控 ===
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                        SetupCard(title = "◎ 仪器身份反馈", subtitle = "HARDWARE IDENTITY") {
+
+                        // 【修改】：升级版健康监控仪表盘
+                        SetupCard(title = "🏥 仪器身份与健康监控", subtitle = "HEALTH & DIAGNOSTICS") {
+                            // 1. 基础信息
                             InfoRow("Instrument Type", viewModel.instrumentType)
                             InfoRow("Firmware Version", viewModel.firmwareVersion)
-                            InfoRow("Structure Version", viewModel.boardInfo?.structureVersion?.toString() ?: "N/A")
-                            InfoRow("Max Channels", viewModel.boardInfo?.maximumChannel?.toString() ?: "N/A")
+
                             Spacer(modifier = Modifier.height(16.dp))
-                            Button(onClick = {}, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2B3648))) {
-                                Text("UPDATE FIRMWARE", fontSize = 11.sp)
+
+                            // 2. 诊断数据表头
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Text("HARDWARE SENSORS", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                Button(
+                                    onClick = { viewModel.checkHealth() },
+                                    modifier = Modifier.height(28.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2B3648))
+                                ) {
+                                    Text("⟲ CHECK HEALTH", fontSize = 10.sp)
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // 3. 诊断数据树状渲染
+                            val report = viewModel.healthReport
+                            if (report == null) {
+                                Box(modifier = Modifier.fillMaxWidth().height(100.dp).border(1.dp, BorderDark, RoundedCornerShape(4.dp)), contentAlignment = Alignment.Center) {
+                                    Text("暂无诊断数据，请打开板卡或手动刷新", color = TextMuted, fontSize = 12.sp)
+                                }
+                            } else {
+                                Column(modifier = Modifier.fillMaxWidth().border(1.dp, BorderDark, RoundedCornerShape(4.dp)).padding(8.dp)) {
+                                    report.forEach { (groupName, groupDataObj) ->
+                                        val groupData = groupDataObj as? Map<*, *> ?: return@forEach
+                                        val isHealthy = groupData["isHealthy"] as? Boolean ?: true
+                                        val stateCode = groupData["state"]?.toString() ?: "0"
+                                        val details = groupData["details"] as? Map<*, *> ?: emptyMap<String, String>()
+
+                                        // 绘制 Group 标题
+                                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Box(modifier = Modifier.size(6.dp).background(if (isHealthy) Color(0xFF10B981) else WarningOrange, RoundedCornerShape(50)))
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(groupName, color = TextWhite, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                            }
+                                            Text(if (isHealthy) "OK" else "ERR:$stateCode", color = if (isHealthy) Color(0xFF10B981) else WarningOrange, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                        }
+
+                                        // 绘制所属 Items
+                                        if (details.isNotEmpty()) {
+                                            Column(modifier = Modifier.padding(start = 12.dp, bottom = 8.dp)) {
+                                                details.forEach { (itemName, itemState) ->
+                                                    val itemStateStr = itemState?.toString() ?: "0"
+                                                    val isItemOk = itemStateStr == "0"
+                                                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                                                        Text("└ $itemName", color = TextMuted, fontSize = 10.sp)
+                                                        Text(if(isItemOk) "OK" else "WARN($itemStateStr)", color = if(isItemOk) TextMuted else WarningOrange, fontSize = 10.sp)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        HorizontalDivider(color = BorderDark, thickness = 0.5.dp)
+                                    }
+                                }
                             }
                         }
 
@@ -199,7 +248,7 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                             }
 
                             Spacer(modifier = Modifier.height(16.dp))
-                            DarkTextField("ACQUISITION TIMEOUT (超时阈值 ms)", timeoutMs, { timeoutMs = it; it.toLongOrNull()?.let { v -> config.autoCollect.timeoutMs = v } }, Modifier.fillMaxWidth())
+                            DarkTextField("ACQUISITION TIMEOUT (超时 ms)", timeoutMs, { timeoutMs = it; it.toLongOrNull()?.let { v -> config.autoCollect.timeoutMs = v } }, Modifier.fillMaxWidth())
 
                             Spacer(modifier = Modifier.height(16.dp))
                             Text("DEFAULT DATA FORMAT", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
