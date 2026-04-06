@@ -76,9 +76,7 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
             }
 
             Spacer(modifier = Modifier.height(20.dp))
-
             ConnectionPipelineBanner(isTcpOk = viewModel.isTcpConnected, isBoardOk = viewModel.isBoardOpened, isConfigOk = viewModel.isConfigApplied)
-
             Spacer(modifier = Modifier.height(24.dp))
 
             Column(modifier = Modifier.weight(1f).verticalScroll(scrollState).padding(bottom = 80.dp)) {
@@ -140,32 +138,22 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                                 onClick = { viewModel.applyParameters() },
                                 enabled = viewModel.isBoardOpened,
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (viewModel.isConfigApplied) Color(0xFF10B981) else WarningOrange,
-                                    disabledContainerColor = BgDark
-                                )
+                                colors = ButtonDefaults.buttonColors(containerColor = if (viewModel.isConfigApplied) Color(0xFF10B981) else WarningOrange, disabledContainerColor = BgDark)
                             ) {
-                                Text(
-                                    text = if (viewModel.isConfigApplied) "✓ 参数已下发就绪" else "3. 下发参数至硬件并预热",
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (viewModel.isConfigApplied) TextWhite else if (viewModel.isBoardOpened) BgDark else TextMuted
-                                )
+                                Text(if (viewModel.isConfigApplied) "✓ 参数已下发就绪" else "3. 下发参数至硬件并预热", fontWeight = FontWeight.Bold, color = if (viewModel.isConfigApplied) TextWhite else if (viewModel.isBoardOpened) BgDark else TextMuted)
                             }
                         }
                     }
 
-                    // === 右列：身份反馈与监控 ===
+                    // === 右列：身份反馈与存储 ===
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(20.dp)) {
 
-                        // 【修改】：升级版健康监控仪表盘
                         SetupCard(title = "🏥 仪器身份与健康监控", subtitle = "HEALTH & DIAGNOSTICS") {
-                            // 1. 基础信息
                             InfoRow("Instrument Type", viewModel.instrumentType)
                             InfoRow("Firmware Version", viewModel.firmwareVersion)
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // 2. 诊断数据表头
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Text("HARDWARE SENSORS", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                                 Button(
@@ -179,7 +167,6 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                             }
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            // 3. 诊断数据树状渲染
                             val report = viewModel.healthReport
                             if (report == null) {
                                 Box(modifier = Modifier.fillMaxWidth().height(100.dp).border(1.dp, BorderDark, RoundedCornerShape(4.dp)), contentAlignment = Alignment.Center) {
@@ -193,7 +180,6 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                                         val stateCode = groupData["state"]?.toString() ?: "0"
                                         val details = groupData["details"] as? Map<*, *> ?: emptyMap<String, String>()
 
-                                        // 绘制 Group 标题
                                         Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 Box(modifier = Modifier.size(6.dp).background(if (isHealthy) Color(0xFF10B981) else WarningOrange, RoundedCornerShape(50)))
@@ -203,7 +189,6 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                                             Text(if (isHealthy) "OK" else "ERR:$stateCode", color = if (isHealthy) Color(0xFF10B981) else WarningOrange, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                                         }
 
-                                        // 绘制所属 Items
                                         if (details.isNotEmpty()) {
                                             Column(modifier = Modifier.padding(start = 12.dp, bottom = 8.dp)) {
                                                 details.forEach { (itemName, itemState) ->
@@ -264,10 +249,7 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
             }
         }
 
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp)
-        ) { data ->
+        SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp)) { data ->
             Snackbar(snackbarData = data, containerColor = Color(0xFF1E2D4A), contentColor = TextWhite, shape = RoundedCornerShape(8.dp))
         }
     }

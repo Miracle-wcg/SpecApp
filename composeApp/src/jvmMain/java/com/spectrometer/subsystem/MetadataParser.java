@@ -92,13 +92,13 @@ public class MetadataParser {
         Map<String, Object> report = new LinkedHashMap<>();
         if (defBuf == null || statusBuf == null) return report;
 
-        // 【安全修复】：捕捉底层越界异常防止奔溃，并归零游标防止二次点击无数据
         try {
             defBuf.order(ByteOrder.LITTLE_ENDIAN);
             statusBuf.order(ByteOrder.LITTLE_ENDIAN);
 
+            // 【核心防丢】：必须归零游标防止二次刷新时报越界读不到数据
             defBuf.position(0);
-            statusBuf.position(0); // 必须归零，否则第二次检查时指针在末尾会导致查无数据
+            statusBuf.position(0);
 
             float version = defBuf.getFloat();
             int groupNumber = defBuf.getInt();
@@ -134,7 +134,7 @@ public class MetadataParser {
                 report.put(groupName, groupData);
             }
         } catch (Exception e) {
-            log.error("解析硬件健康监控数据异常，可能游标越界", e);
+            log.error("解析硬件健康监控数据异常，游标越界保护触发", e);
         }
 
         return report;

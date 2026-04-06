@@ -25,7 +25,6 @@ public class SpectrometerDriver {
         this.props = props;
     }
 
-    // 步骤 1：仅建立 TCP 连接
     public boolean connectTcp() {
         lock.lock();
         try {
@@ -34,7 +33,7 @@ public class SpectrometerDriver {
             }
             client = new AcquisitionDriverClient(props.getServerIp(), props.getTcpPort());
             log.info("尝试建立 TCP 连接: {}:{}", props.getServerIp(), props.getTcpPort());
-            if (client.open()) { // SDK 中返回 true 代表失败
+            if (client.open()) {
                 log.error("无法建立与光谱仪服务器的 TCP 连接");
                 tcpConnected = false;
                 return false;
@@ -51,7 +50,6 @@ public class SpectrometerDriver {
         }
     }
 
-    // 步骤 2：获取板卡信息并打开板卡
     public boolean openBoard() {
         lock.lock();
         try {
@@ -82,7 +80,6 @@ public class SpectrometerDriver {
         }
     }
 
-    // 步骤 3：下发参数配置
     public void configure(short res, short gain1, short gain2, float startW, float stopW) throws IOException {
         lock.lock();
         try {
@@ -128,47 +125,27 @@ public class SpectrometerDriver {
 
     public ByteBuffer fetchControlStatus() throws IOException {
         lock.lock();
-        try {
-            return boardOpened ? client.getControlStatus() : null;
-        } finally {
-            lock.unlock();
-        }
+        try { return boardOpened ? client.getControlStatus() : null; } finally { lock.unlock(); }
     }
 
     public ByteBuffer fetchStatusDefinition() throws IOException {
         lock.lock();
-        try {
-            return boardOpened ? client.getStatusDefinition() : null;
-        } finally {
-            lock.unlock();
-        }
+        try { return boardOpened ? client.getStatusDefinition() : null; } finally { lock.unlock(); }
     }
 
     public ByteBuffer fetchCurrentStatus() throws IOException {
         lock.lock();
-        try {
-            return boardOpened ? client.getStatus((byte) 0) : null;
-        } finally {
-            lock.unlock();
-        }
+        try { return boardOpened ? client.getStatus((byte) 0) : null; } finally { lock.unlock(); }
     }
 
     public ByteBuffer fetchHealthStatusDefinition() throws IOException {
         lock.lock();
-        try {
-            return boardOpened ? client.acqGetHealthMonitoringStatusDefinition() : null;
-        } finally {
-            lock.unlock();
-        }
+        try { return boardOpened ? client.acqGetHealthMonitoringStatusDefinition() : null; } finally { lock.unlock(); }
     }
 
     public ByteBuffer fetchHealthStatus() throws IOException {
         lock.lock();
-        try {
-            return boardOpened ? client.getHealthMonitoringStatus() : null;
-        } finally {
-            lock.unlock();
-        }
+        try { return boardOpened ? client.getHealthMonitoringStatus() : null; } finally { lock.unlock(); }
     }
 
     public float[] fetchRawData(int source, int nPts, long timeoutMs) throws IOException, InterruptedException {
@@ -194,18 +171,9 @@ public class SpectrometerDriver {
         lock.lock();
         try {
             if (client != null) {
-                try {
-                    client.stopAcqusition();
-                } catch (Exception ignored) {
-                }
-                try {
-                    client.closeBoard();
-                } catch (Exception ignored) {
-                }
-                try {
-                    client.close();
-                } catch (Exception ignored) {
-                }
+                try { client.stopAcqusition(); } catch (Exception ignored) {}
+                try { client.closeBoard(); } catch (Exception ignored) {}
+                try { client.close(); } catch (Exception ignored) {}
             }
             tcpConnected = false;
             boardOpened = false;
@@ -216,19 +184,8 @@ public class SpectrometerDriver {
         }
     }
 
-    public boolean isTcpConnected() {
-        return tcpConnected;
-    }
-
-    public boolean isBoardOpened() {
-        return boardOpened;
-    }
-
-    public boolean isConnected() {
-        return boardOpened;
-    }
-
-    public AcquisitionDriverClient.BoardInformation getBoardInfo() {
-        return boardInfo;
-    }
+    public boolean isTcpConnected() { return tcpConnected; }
+    public boolean isBoardOpened() { return boardOpened; }
+    public boolean isConnected() { return boardOpened; }
+    public AcquisitionDriverClient.BoardInformation getBoardInfo() { return boardInfo; }
 }

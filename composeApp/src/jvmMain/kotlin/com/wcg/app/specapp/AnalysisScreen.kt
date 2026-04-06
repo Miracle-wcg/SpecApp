@@ -41,7 +41,6 @@ private fun HeaderAndActions(viewModel: SpectrometerViewModel) {
                 Text("Spectral Analysis", color = AccentCyan, fontSize = 18.sp, modifier = Modifier.padding(bottom = 2.dp))
             }
 
-            // ===== 优化：全局状态同步与断开连接控制 =====
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
                 val isReady = viewModel.isBoardOpened
                 val statusColor = if (isReady) Color(0xFF10B981) else WarningOrange
@@ -49,7 +48,6 @@ private fun HeaderAndActions(viewModel: SpectrometerViewModel) {
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(if (isReady) "设备已连接就绪 (ONLINE)" else "设备未连接 (OFFLINE)", color = statusColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
 
-                // 如果处于已连接状态，则在状态旁边额外渲染一个红色的断开按钮
                 if (viewModel.isTcpConnected || viewModel.isBoardOpened) {
                     Spacer(modifier = Modifier.width(16.dp))
                     Box(modifier = Modifier.width(1.dp).height(12.dp).background(BorderDark))
@@ -86,16 +84,17 @@ private fun HeaderAndActions(viewModel: SpectrometerViewModel) {
     }
 }
 
-// ===== 下方组件保持原样 =====
 @Composable
 private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = Modifier) {
     Box(modifier = modifier.clip(RoundedCornerShape(8.dp)).background(PanelBg).border(1.dp, BorderDark, RoundedCornerShape(8.dp))) {
-        Text("ABSORBANCE [AU] (吸光度)", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.CenterStart).offset(x = (-30).dp).rotate(-90f))
+        Text("INTENSITY / ABSORBANCE", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.CenterStart).offset(x = (-30).dp).rotate(-90f))
 
         val data = viewModel.spectrumData
+
         Canvas(modifier = Modifier.fillMaxSize().padding(start = 60.dp, bottom = 60.dp, top = 40.dp, end = 40.dp)) {
             val width = size.width
             val height = size.height
+
             val gridLines = 6
             for (i in 0..gridLines) {
                 val y = i * (height / gridLines)
@@ -103,31 +102,38 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
                 val x = i * (width / gridLines)
                 drawLine(color = BorderDark, start = Offset(x, 0f), end = Offset(x, height), strokeWidth = 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f)))
             }
+
             if (data.isNotEmpty()) {
                 val minX = data.minOf { it.first }
                 val maxX = data.maxOf { it.first }
                 val minY = data.minOf { it.second }
-                val maxY = data.maxOf { it.second } * 1.1
+                val maxY = data.maxOf { it.second }
+
+                val rangeY = maxY - minY
+                val renderMinY = minY - (rangeY * 0.1)
+                val renderMaxY = maxY + (rangeY * 0.1)
 
                 val path = Path()
                 data.forEachIndexed { index, point ->
                     val px = ((maxX - point.first) / (maxX - minX)).toFloat() * width
-                    val py = height - ((point.second - minY) / (maxY - minY)).toFloat() * height
+                    val py = height - ((point.second - renderMinY) / (renderMaxY - renderMinY)).toFloat() * height
+
                     if (index == 0) path.moveTo(px, py) else path.lineTo(px, py)
                 }
                 drawPath(path = path, color = AccentCyan, style = Stroke(width = 2.dp.toPx()))
             }
         }
+
         Text("WAVENUMBER [CM-1] (波数)", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp))
 
         Column(modifier = Modifier.align(Alignment.TopEnd).padding(24.dp).background(Color(0xFF2A364B).copy(alpha = 0.8f), RoundedCornerShape(4.dp)).padding(12.dp)) {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.width(100.dp)) {
-                Text("Peak [X]", color = TextMuted, fontSize = 10.sp)
+                Text("Peak X", color = TextMuted, fontSize = 10.sp)
                 Text(viewModel.peakX, color = WarningOrange, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.height(4.dp))
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.width(100.dp)) {
-                Text("Value [Y]", color = TextMuted, fontSize = 10.sp)
+                Text("Peak Y", color = TextMuted, fontSize = 10.sp)
                 Text(viewModel.peakY, color = WarningOrange, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
         }
@@ -157,18 +163,17 @@ private fun InstrumentConfigPanel(viewModel: SpectrometerViewModel, modifier: Mo
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("📡", fontSize = 18.sp)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("仪器配置 ", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                    Text("Instrument Configuration", color = TextWhite, fontSize = 16.sp)
+                    Text("实时采集配置 ", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
                 Box(modifier = Modifier.border(1.dp, BorderDark, RoundedCornerShape(4.dp)).padding(horizontal = 8.dp, vertical = 4.dp)) {
-                    Text(if (viewModel.isBoardOpened) "SYSTEM READY" else "OFFLINE", color = if (viewModel.isBoardOpened) AccentCyan else TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Text(if (viewModel.isBoardOpened) "READY" else "OFFLINE", color = if (viewModel.isBoardOpened) AccentCyan else TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
             Row(modifier = Modifier.weight(1f)) {
                 ConfigCol("波段范围 WAVE RANGE", "${config.params.startWave} - ${config.params.stopWave} cm-1", "分辨率 RESOLUTION", resText, "激光频率 LASER FREQ", "${config.laserFreq} Hz", Modifier.weight(1f))
                 ConfigCol("运行状态 STATUS", if(isAcquiring) "采集进行中 Acquiring" else "待机 Standby", "扫描次数 CO-ADDS", "${viewModel.currentSweep} / ${viewModel.totalSweeps}", "硬件连接 H/W LINK", if (viewModel.isBoardOpened) "Connected" else "Disconnected", Modifier.weight(1f), isAcquiring)
-                ConfigCol("设备名称 BOARD NAME", config.boardName, "增益配置 GAIN", "G1:${config.params.firstGain} / G2:${config.params.secondGain}", "全局导出格式 EXPORT FMT", viewModel.exportFormat, Modifier.weight(1f))
+                ConfigCol("目标 IP ADDRESS", config.serverIp, "增益配置 GAIN", "G1:${config.params.firstGain} / G2:${config.params.secondGain}", "全局导出格式 EXPORT FMT", viewModel.exportFormat, Modifier.weight(1f))
             }
         }
     }

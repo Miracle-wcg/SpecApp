@@ -39,7 +39,6 @@ class SpectrometerViewModel {
     var boardInfo by mutableStateOf<AcquisitionDriverClient.BoardInformation?>(null)
     var firmwareVersion by mutableStateOf("N/A")
     var instrumentType by mutableStateOf("N/A")
-
     var healthReport by mutableStateOf<Map<String, Any>?>(null)
 
     var spectrumData by mutableStateOf<List<Pair<Double, Double>>>(emptyList())
@@ -51,9 +50,7 @@ class SpectrometerViewModel {
 
     var exportFormat by mutableStateOf("SPC")
 
-    fun clearMessage() {
-        uiMessage = null
-    }
+    fun clearMessage() { uiMessage = null }
 
     fun disconnectHardware() {
         scope.launch(Dispatchers.IO) {
@@ -62,7 +59,6 @@ class SpectrometerViewModel {
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
-                // 确保所有 UI 状态重置都在主线程执行
                 withContext(Dispatchers.Main) {
                     isTcpConnected = false
                     isBoardOpened = false
@@ -79,29 +75,22 @@ class SpectrometerViewModel {
     }
 
     fun checkHealth() {
-        if (!isBoardOpened) {
-            uiMessage = "⚠️ 无法获取健康状态：板卡未打开"
-            return
-        }
+        if (!isBoardOpened) return
         scope.launch(Dispatchers.IO) {
             try {
                 val hDef = driver.fetchHealthStatusDefinition()
                 val hStat = driver.fetchHealthStatus()
                 if (hDef != null && hStat != null) {
                     val report = parser.parseHealthMonitoring(hDef, hStat)
-                    // 强制切回主线程更新 UI
                     withContext(Dispatchers.Main) {
-                        healthReport = null // 先清空，强迫 Compose 销毁旧 UI
+                        healthReport = null
                         @Suppress("UNCHECKED_CAST")
-                        healthReport = (report as Map<String, Any>).toMap() // 创建全新对象触发重绘
+                        healthReport = (report as Map<String, Any>).toMap()
                         uiMessage = "✅ 硬件健康监控诊断已刷新"
                     }
-                } else {
-                    withContext(Dispatchers.Main) { uiMessage = "⚠️ 硬件未返回健康监控数据" }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                withContext(Dispatchers.Main) { uiMessage = "❌ 健康状态获取失败: ${e.message}" }
             }
         }
     }
@@ -125,32 +114,24 @@ class SpectrometerViewModel {
     }
 
     fun openBoard() {
-        if (!isTcpConnected) {
-            uiMessage = "⚠️ 请先建立 TCP 连接"
-            return
-        }
+        if (!isTcpConnected) return
         scope.launch(Dispatchers.IO) {
             withContext(Dispatchers.Main) { connectionState = ConnectionState.Connecting }
             if (driver.openBoard()) {
                 val info = driver.boardInfo
-
                 driver.fetchStatusDefinition()?.let { parser.initTable(it) }
                 driver.fetchControlStatus()?.let { parser.initControlTable(it) }
 
-                // 强制切回主线程绑定硬件反馈数据
                 withContext(Dispatchers.Main) {
                     boardInfo = info
                     firmwareVersion = "v${info?.acquisitionDriverVersion ?: "N/A"}"
                     instrumentType = when (info?.instrumentType?.toInt()) {
-                        0 -> "MID-IR"
-                        1 -> "NIR"
-                        else -> "Unknown (${info?.instrumentType})"
+                        0 -> "MID-IR"; 1 -> "NIR"; else -> "Unknown (${info?.instrumentType})"
                     }
                     isBoardOpened = true
                     connectionState = ConnectionState.Ready
                     uiMessage = "✅ 板卡打开成功，已获取硬件信息"
                 }
-
                 checkHealth()
             } else {
                 withContext(Dispatchers.Main) {
@@ -163,10 +144,7 @@ class SpectrometerViewModel {
     }
 
     fun applyParameters() {
-        if (!isBoardOpened) {
-            uiMessage = "⚠️ 请先打开板卡并获取硬件身份"
-            return
-        }
+        if (!isBoardOpened) return
         scope.launch(Dispatchers.IO) {
             try {
                 driver.configure(config.params.resolution, config.params.firstGain, config.params.secondGain, config.params.startWave, config.params.stopWave)
@@ -176,10 +154,7 @@ class SpectrometerViewModel {
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    isConfigApplied = false
-                    uiMessage = "❌ 参数下发失败: ${e.message}"
-                }
+                withContext(Dispatchers.Main) { isConfigApplied = false; uiMessage = "❌ 参数下发失败: ${e.message}" }
             }
         }
     }
@@ -189,6 +164,7 @@ class SpectrometerViewModel {
             uiMessage = "⚠️ 无法启动：设备未就绪或未下发参数"
             return
         }
+
         isAcquiring = true
         totalSweeps = config.params.numScans
         currentSweep = 0
@@ -208,7 +184,6 @@ class SpectrometerViewModel {
                     val statusBuf = driver.fetchCurrentStatus() ?: throw Exception("无法获取状态信息")
                     val coaddState = parser.extractControlValue(statusBuf, 11).toInt()
 
-                    // 切回主线程平滑刷新进度条
                     withContext(Dispatchers.Main) {
                         currentSweep = minOf(currentSweep + 1, totalSweeps)
                         progress = currentSweep.toFloat() / totalSweeps
@@ -226,6 +201,7 @@ class SpectrometerViewModel {
                 val rawData = driver.fetchRawData(SpectrometerDriver.SOURCE_FIFO, nPts, config.autoCollect.timeoutMs)
                 val metadata = parser.parseDynamicMetadata(statusBuf)
 
+                // 1. 将内存流持久化到文件系统
                 val savedPath = try {
                     if (exportFormat == "SPC") {
                         storage.saveToSpc(rawData, metadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble(), config.savePath)
@@ -234,24 +210,37 @@ class SpectrometerViewModel {
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    "文件保存失败"
+                    null
                 }
 
-                val xyData = storage.getSpectrumDataArray(rawData, metadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble())
+                // 2. 【核心修改】：强制读取并解析刚刚生成的物理文件，证明文件写入成功且可用！
+                val xyData = try {
+                    if (savedPath != null) {
+                        storage.readFromFile(savedPath)
+                    } else {
+                        // 降级保护：如果磁盘满了导致写入失败，仍从内存加载以防止界面空转
+                        storage.getSpectrumDataArray(rawData, metadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble())
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    null
+                }
 
-                if (xyData[0].isNotEmpty()) {
-                    val points = xyData[0].zip(xyData[1]).toList()
+                if (xyData != null && xyData.size == 2 && xyData[0].isNotEmpty()) {
+                    val xArray = xyData[0]
+                    val yArray = xyData[1]
+
+                    val points = xArray.zip(yArray).toList()
                     val maxPoint = points.maxByOrNull { it.second }
 
-                    // 主线程渲染图表数据
                     withContext(Dispatchers.Main) {
                         spectrumData = points
                         if (maxPoint != null) {
                             peakX = String.format("%.2f", maxPoint.first)
-                            peakY = String.format("%.3f", maxPoint.second)
+                            peakY = String.format("%.4f", maxPoint.second)
                         }
                         progress = 1f
-                        uiMessage = "🎉 采集完成！数据已导出至: $savedPath"
+                        uiMessage = if (savedPath != null) "🎉 采集完成！数据已成功从 ($exportFormat) 文件读取并渲染" else "⚠️ 渲染成功，但文件持久化失败"
                     }
                 }
             } catch (e: Exception) {
@@ -269,8 +258,7 @@ class SpectrometerViewModel {
             try {
                 driver.stopAcquisition()
                 withContext(Dispatchers.Main) { uiMessage = "🛑 已发送停止采集指令" }
-            } catch (e: Exception) {
-            }
+            } catch (e: Exception) {}
         }
     }
 }
