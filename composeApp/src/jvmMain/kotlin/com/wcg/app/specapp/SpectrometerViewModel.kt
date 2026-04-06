@@ -160,8 +160,17 @@ class SpectrometerViewModel {
     }
 
     fun startAcquisition() {
-        if (isAcquiring || !driver.isConnected || !isConfigApplied) {
-            uiMessage = "⚠️ 无法启动：设备未就绪或未下发参数"
+        // 【优化点 2】：开始采集的严密逻辑判断与精细提示
+        if (isAcquiring) {
+            uiMessage = "⚠️ 无法启动：当前正在进行采集任务，请勿重复操作"
+            return
+        }
+        if (!isTcpConnected || !isBoardOpened) {
+            uiMessage = "⚠️ 无法启动：设备未连接，请先前往【仪器设置】建立连接"
+            return
+        }
+        if (!isConfigApplied) {
+            uiMessage = "⚠️ 无法启动：参数尚未下发，请前往【仪器设置】下发光学参数"
             return
         }
 
@@ -201,7 +210,6 @@ class SpectrometerViewModel {
                 val rawData = driver.fetchRawData(SpectrometerDriver.SOURCE_FIFO, nPts, config.autoCollect.timeoutMs)
                 val metadata = parser.parseDynamicMetadata(statusBuf)
 
-                // 1. 将内存流持久化到文件系统
                 val savedPath = try {
                     if (exportFormat == "SPC") {
                         storage.saveToSpc(rawData, metadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble(), config.savePath)
@@ -213,12 +221,10 @@ class SpectrometerViewModel {
                     null
                 }
 
-                // 2. 【核心修改】：强制读取并解析刚刚生成的物理文件，证明文件写入成功且可用！
                 val xyData = try {
                     if (savedPath != null) {
                         storage.readFromFile(savedPath)
                     } else {
-                        // 降级保护：如果磁盘满了导致写入失败，仍从内存加载以防止界面空转
                         storage.getSpectrumDataArray(rawData, metadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble())
                     }
                 } catch (e: Exception) {
@@ -253,11 +259,12 @@ class SpectrometerViewModel {
     }
 
     fun stopAcquisition() {
+        if (!isAcquiring) return
         isAcquiring = false
         scope.launch(Dispatchers.IO) {
             try {
                 driver.stopAcquisition()
-                withContext(Dispatchers.Main) { uiMessage = "🛑 已发送停止采集指令" }
+                withContext(Dispatchers.Main) { uiMessage = "🛑 已向设备发送停止采集指令" }
             } catch (e: Exception) {}
         }
     }
