@@ -177,22 +177,30 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
                 for (i in 0..gridLines) {
                     val yValue = renderMaxY - i * (renderMaxY - renderMinY) / gridLines
                     val yPos = i * (height / gridLines)
+
+                    // 【修复点】：先 measure 生成 TextLayoutResult，绕过 Canvas 边界检查
+                    val yTextResult = textMeasurer.measure(
+                        text = String.format("%.4f", yValue),
+                        style = axisTextStyle
+                    )
                     drawText(
-                        textMeasurer = textMeasurer,
-                        text = String.format("%.4f", yValue), // Y轴精度4位
-                        style = axisTextStyle,
+                        textLayoutResult = yTextResult,
                         topLeft = Offset(-60.dp.toPx(), yPos - 6.dp.toPx())
                     )
                 }
 
-                // 绘制 X 轴数值 (底部，注意由于是波数，通常 X 轴由右向左递减，因此这里映射计算要与折线对应)
+                // 绘制 X 轴数值 (底部，注意由于是波数，通常 X 轴由右向左递减)
                 for (i in 0..gridLines) {
                     val xValue = maxX - i * (maxX - minX) / gridLines
                     val xPos = i * (width / gridLines)
+
+                    // 【修复点】：先 measure，防止 height + 10.dp 导致 maxHeight 为负数崩溃
+                    val xTextResult = textMeasurer.measure(
+                        text = String.format("%.1f", xValue),
+                        style = axisTextStyle
+                    )
                     drawText(
-                        textMeasurer = textMeasurer,
-                        text = String.format("%.1f", xValue), // X轴精度1位
-                        style = axisTextStyle,
+                        textLayoutResult = xTextResult,
                         topLeft = Offset(xPos - 15.dp.toPx(), height + 10.dp.toPx())
                     )
                 }
