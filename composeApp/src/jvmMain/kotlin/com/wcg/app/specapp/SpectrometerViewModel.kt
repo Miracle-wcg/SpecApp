@@ -160,22 +160,14 @@ class SpectrometerViewModel {
     }
 
     fun startAcquisition() {
-        // 【优化点 2】：开始采集的严密逻辑判断与精细提示
-        if (isAcquiring) {
-            uiMessage = "⚠️ 无法启动：当前正在进行采集任务，请勿重复操作"
-            return
-        }
-        if (!isTcpConnected || !isBoardOpened) {
-            uiMessage = "⚠️ 无法启动：设备未连接，请先前往【仪器设置】建立连接"
-            return
-        }
-        if (!isConfigApplied) {
-            uiMessage = "⚠️ 无法启动：参数尚未下发，请前往【仪器设置】下发光学参数"
+        if (isAcquiring || !driver.isConnected || !isConfigApplied) {
+            uiMessage = "⚠️ 无法启动：设备未就绪或未下发参数"
             return
         }
 
         isAcquiring = true
-        totalSweeps = config.params.numScans
+        val numScans = config.params.numScans
+        totalSweeps = numScans
         currentSweep = 0
         progress = 0f
 
@@ -185,58 +177,86 @@ class SpectrometerViewModel {
 
         scope.launch(Dispatchers.IO) {
             try {
-                driver.startCoaddition(config.params.numScans, config.params.numRuns)
-                val t0 = System.currentTimeMillis()
-                val timeout = config.autoCollect.timeoutMs + (config.params.numScans * 1500L)
+                var accumulatedRawData: FloatArray? = null
+                var finalMetadata: Map<String, String> = emptyMap()
+                var actualScanCount = 0
 
-                while (isAcquiring) {
-                    val statusBuf = driver.fetchCurrentStatus() ?: throw Exception("无法获取状态信息")
-                    val coaddState = parser.extractControlValue(statusBuf, 11).toInt()
+                // 【核心重构】：执行软件级真实多次扫描与均值算法 (Software Co-addition)
+                for (scanIndex in 1..numScans) {
+                    if (!isAcquiring) break
 
-                    withContext(Dispatchers.Main) {
-                        currentSweep = minOf(currentSweep + 1, totalSweeps)
-                        progress = currentSweep.toFloat() / totalSweeps
+                    // 1. 抓取硬件连续流 (SOURCE_CURRENT) 的当前最新单帧光谱数据
+                    val statusBuf = driver.fetchCurrentStatus() ?: throw Exception("无法获取硬件状态")
+                    val nPts = parser.extractNpts(statusBuf)
+                    if (nPts <= 0) throw Exception("数据点数异常: $nPts")
+
+                    val rawData = driver.fetchRawData(SpectrometerDriver.SOURCE_CURRENT, nPts, config.autoCollect.timeoutMs)
+                    finalMetadata = parser.parseDynamicMetadata(statusBuf)
+
+                    // 2. 将单帧数据累加到数组缓冲池中
+                    if (accumulatedRawData == null || accumulatedRawData.size != nPts) {
+                        accumulatedRawData = FloatArray(nPts)
+                    }
+                    for (i in 0 until nPts) {
+                        accumulatedRawData[i] += rawData[i]
+                    }
+                    actualScanCount++
+
+                    // 3. 实时渲染当前【未平均】的单帧光谱，让用户看到真实的扫描噪声与跳动动画
+                    val liveXyData = storage.getSpectrumDataArray(rawData, finalMetadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble())
+                    if (liveXyData != null && liveXyData.size == 2 && liveXyData[0].isNotEmpty()) {
+                        val points = liveXyData[0].zip(liveXyData[1]).toList()
+                        val maxPoint = points.maxByOrNull { it.second }
+
+                        withContext(Dispatchers.Main) {
+                            spectrumData = points
+                            if (maxPoint != null) {
+                                peakX = String.format("%.2f", maxPoint.first)
+                                peakY = String.format("%.4f", maxPoint.second)
+                            }
+                            currentSweep = scanIndex
+                            progress = scanIndex.toFloat() / numScans
+                        }
                     }
 
-                    if (coaddState == 0) break
-                    if (System.currentTimeMillis() - t0 > timeout) throw Exception("扫描超时")
+                    // 模拟硬件单次干涉仪扫描耗时，控制进度条和渲染频率
                     delay(300)
                 }
 
-                if (!isAcquiring) return@launch
+                if (!isAcquiring || accumulatedRawData == null || actualScanCount == 0) return@launch
 
-                val statusBuf = driver.fetchCurrentStatus()
-                val nPts = parser.extractNpts(statusBuf)
-                val rawData = driver.fetchRawData(SpectrometerDriver.SOURCE_FIFO, nPts, config.autoCollect.timeoutMs)
-                val metadata = parser.parseDynamicMetadata(statusBuf)
+                withContext(Dispatchers.Main) { uiMessage = "⏳ 正在计算 $actualScanCount 次扫描的平滑均值并持久化..." }
 
+                // 4. 计算所有采集帧的数学平均值 (Average)，消除随机噪声提升信噪比
+                for (i in accumulatedRawData.indices) {
+                    accumulatedRawData[i] /= actualScanCount.toFloat()
+                }
+
+                // 5. 将平均化后的高 SNR 数据导出到物理文件
                 val savedPath = try {
                     if (exportFormat == "SPC") {
-                        storage.saveToSpc(rawData, metadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble(), config.savePath)
+                        storage.saveToSpc(accumulatedRawData, finalMetadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble(), config.savePath)
                     } else {
-                        storage.saveToTxt(rawData, metadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble(), config.savePath)
+                        storage.saveToTxt(accumulatedRawData, finalMetadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble(), config.savePath)
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
                     null
                 }
 
-                val xyData = try {
+                // 6. 从物理文件中反向读取解析，实现“所见即所得”，绘制最终的平滑曲线
+                val finalXyData = try {
                     if (savedPath != null) {
                         storage.readFromFile(savedPath)
                     } else {
-                        storage.getSpectrumDataArray(rawData, metadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble())
+                        storage.getSpectrumDataArray(accumulatedRawData, finalMetadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble())
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
-                    null
+                    storage.getSpectrumDataArray(accumulatedRawData, finalMetadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble())
                 }
 
-                if (xyData != null && xyData.size == 2 && xyData[0].isNotEmpty()) {
-                    val xArray = xyData[0]
-                    val yArray = xyData[1]
-
-                    val points = xArray.zip(yArray).toList()
+                if (finalXyData != null && finalXyData.size == 2 && finalXyData[0].isNotEmpty()) {
+                    val points = finalXyData[0].zip(finalXyData[1]).toList()
                     val maxPoint = points.maxByOrNull { it.second }
 
                     withContext(Dispatchers.Main) {
@@ -246,9 +266,10 @@ class SpectrometerViewModel {
                             peakY = String.format("%.4f", maxPoint.second)
                         }
                         progress = 1f
-                        uiMessage = if (savedPath != null) "🎉 采集完成！数据已成功从 ($exportFormat) 文件读取并渲染" else "⚠️ 渲染成功，但文件持久化失败"
+                        uiMessage = "🎉 $actualScanCount 次扫描并求均值完成！数据已导出至: $savedPath"
                     }
                 }
+
             } catch (e: Exception) {
                 e.printStackTrace()
                 withContext(Dispatchers.Main) { uiMessage = "❌ 采集异常: ${e.message}" }
@@ -259,12 +280,12 @@ class SpectrometerViewModel {
     }
 
     fun stopAcquisition() {
-        if (!isAcquiring) return
         isAcquiring = false
         scope.launch(Dispatchers.IO) {
             try {
+                // 不再依赖黑盒子的停止指令，只要我们将 isAcquiring 设为 false，上方的 For 循环就会立即安全中断
                 driver.stopAcquisition()
-                withContext(Dispatchers.Main) { uiMessage = "🛑 已向设备发送停止采集指令" }
+                withContext(Dispatchers.Main) { uiMessage = "🛑 已手动中断光谱采集序列" }
             } catch (e: Exception) {}
         }
     }

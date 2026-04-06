@@ -4,40 +4,27 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.math.abs
 
 @Composable
 fun AnalysisScreen(viewModel: SpectrometerViewModel) {
     Column(modifier = Modifier.fillMaxSize()) {
         HeaderAndActions(viewModel)
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 【优化点 3】：分离的进度条和折线图区域
+        Spacer(modifier = Modifier.height(20.dp))
         ChartSection(viewModel, modifier = Modifier.weight(1.5f).fillMaxWidth())
-        Spacer(modifier = Modifier.height(12.dp))
-        ProgressSection(viewModel)
-        Spacer(modifier = Modifier.height(16.dp))
-
+        Spacer(modifier = Modifier.height(20.dp))
         Row(modifier = Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
             InstrumentConfigPanel(viewModel, modifier = Modifier.weight(1.5f))
             DataExportPanel(viewModel, modifier = Modifier.weight(0.8f))
@@ -75,47 +62,25 @@ private fun HeaderAndActions(viewModel: SpectrometerViewModel) {
                 }
             }
         }
-
-        // 【优化点 1】：按钮大小与布局优化
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             OutlinedButton(
                 onClick = { viewModel.stopAcquisition() },
-                modifier = Modifier.height(40.dp).width(120.dp),
-                shape = RoundedCornerShape(4.dp),
+                modifier = Modifier.height(44.dp), shape = RoundedCornerShape(4.dp),
                 colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.Transparent, contentColor = TextWhite),
-                border = BorderStroke(1.dp, DangerRed)
+                border = BorderStroke(1.dp, BorderDark)
             ) {
                 Box(modifier = Modifier.size(8.dp).background(DangerRed))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("停止", fontWeight = FontWeight.Bold)
+                Text("停止 STOP", fontWeight = FontWeight.Bold)
             }
             Button(
                 onClick = { viewModel.startAcquisition() },
-                modifier = Modifier.height(40.dp).width(160.dp),
-                shape = RoundedCornerShape(4.dp),
+                modifier = Modifier.height(44.dp).width(240.dp), shape = RoundedCornerShape(4.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = AccentCyan, contentColor = BgDark)
             ) {
-                Text("▶ 开始采集", fontWeight = FontWeight.ExtraBold)
+                Text("▶ 开始采集 START ACQUISITION", fontWeight = FontWeight.ExtraBold)
             }
         }
-    }
-}
-
-// 【优化点 3】：独立的进度条组件
-@Composable
-private fun ProgressSection(viewModel: SpectrometerViewModel, modifier: Modifier = Modifier) {
-    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("采集进度 SCAN PROGRESS", color = AccentCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            Text("${(viewModel.progress * 100).toInt()}%", color = AccentCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-        }
-        Spacer(modifier = Modifier.height(6.dp))
-        LinearProgressIndicator(
-            progress = { viewModel.progress },
-            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)),
-            color = AccentCyan,
-            trackColor = PanelBg
-        )
     }
 }
 
@@ -126,35 +91,11 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
 
         val data = viewModel.spectrumData
 
-        // 测量和样式准备
-        val textMeasurer = rememberTextMeasurer()
-        val axisTextStyle = TextStyle(color = TextMuted, fontSize = 10.sp)
-
-        // 鼠标位置状态
-        var mousePosition by remember { mutableStateOf(Offset.Unspecified) }
-
-        Canvas(modifier = Modifier
-            .fillMaxSize()
-            .padding(start = 70.dp, bottom = 40.dp, top = 30.dp, end = 30.dp)
-            .pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent()
-                        // 【优化点 4】：侦听鼠标移动，支持坐标展示
-                        if (event.type == PointerEventType.Move) {
-                            mousePosition = event.changes.first().position
-                        } else if (event.type == PointerEventType.Exit) {
-                            mousePosition = Offset.Unspecified
-                        }
-                    }
-                }
-            }
-        ) {
+        Canvas(modifier = Modifier.fillMaxSize().padding(start = 60.dp, bottom = 60.dp, top = 40.dp, end = 40.dp)) {
             val width = size.width
             val height = size.height
-            val gridLines = 8
 
-            // 1. 绘制网格线
+            val gridLines = 6
             for (i in 0..gridLines) {
                 val y = i * (height / gridLines)
                 drawLine(color = BorderDark, start = Offset(0f, y), end = Offset(width, y), strokeWidth = 1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f)))
@@ -172,93 +113,39 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
                 val renderMinY = minY - (rangeY * 0.1)
                 val renderMaxY = maxY + (rangeY * 0.1)
 
-                // 2. 【优化点 5】：绘制高精度的 X、Y 轴刻度文本
-                // 绘制 Y 轴数值 (左侧)
-                for (i in 0..gridLines) {
-                    val yValue = renderMaxY - i * (renderMaxY - renderMinY) / gridLines
-                    val yPos = i * (height / gridLines)
-
-                    // 【修复点】：先 measure 生成 TextLayoutResult，绕过 Canvas 边界检查
-                    val yTextResult = textMeasurer.measure(
-                        text = String.format("%.4f", yValue),
-                        style = axisTextStyle
-                    )
-                    drawText(
-                        textLayoutResult = yTextResult,
-                        topLeft = Offset(-60.dp.toPx(), yPos - 6.dp.toPx())
-                    )
-                }
-
-                // 绘制 X 轴数值 (底部，注意由于是波数，通常 X 轴由右向左递减)
-                for (i in 0..gridLines) {
-                    val xValue = maxX - i * (maxX - minX) / gridLines
-                    val xPos = i * (width / gridLines)
-
-                    // 【修复点】：先 measure，防止 height + 10.dp 导致 maxHeight 为负数崩溃
-                    val xTextResult = textMeasurer.measure(
-                        text = String.format("%.1f", xValue),
-                        style = axisTextStyle
-                    )
-                    drawText(
-                        textLayoutResult = xTextResult,
-                        topLeft = Offset(xPos - 15.dp.toPx(), height + 10.dp.toPx())
-                    )
-                }
-
-                // 3. 【优化点 4】：绘制细线条高精度折线图
                 val path = Path()
                 data.forEachIndexed { index, point ->
-                    // 反向 X 轴：高波数在左，低波数在右
                     val px = ((maxX - point.first) / (maxX - minX)).toFloat() * width
                     val py = height - ((point.second - renderMinY) / (renderMaxY - renderMinY)).toFloat() * height
 
                     if (index == 0) path.moveTo(px, py) else path.lineTo(px, py)
                 }
-                drawPath(path = path, color = AccentCyan, style = Stroke(width = 1.dp.toPx()))
-
-                // 4. 【优化点 4】：绘制鼠标悬停时的十字光标和数据提示框
-                if (mousePosition != Offset.Unspecified) {
-                    val mouseX = mousePosition.x
-                    if (mouseX in 0f..width) {
-                        // 反推当前鼠标对应的 X 真实值
-                        val mappedX = maxX - (mouseX / width) * (maxX - minX)
-                        // 寻找最靠近的数据点
-                        val closest = data.minByOrNull { abs(it.first - mappedX) }
-                        if (closest != null) {
-                            val cx = ((maxX - closest.first) / (maxX - minX)).toFloat() * width
-                            val cy = height - ((closest.second - renderMinY) / (renderMaxY - renderMinY)).toFloat() * height
-
-                            // 十字光标线
-                            drawLine(color = WarningOrange.copy(alpha = 0.6f), start = Offset(cx, 0f), end = Offset(cx, height), strokeWidth = 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f)))
-                            drawLine(color = WarningOrange.copy(alpha = 0.6f), start = Offset(0f, cy), end = Offset(width, cy), strokeWidth = 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f)))
-
-                            // 交点圆圈
-                            drawCircle(color = WarningOrange, radius = 4.dp.toPx(), center = Offset(cx, cy))
-
-                            // 浮窗 Tooltip 绘制
-                            val tooltipText = "X: ${String.format("%.2f", closest.first)} cm⁻¹\nY: ${String.format("%.5f", closest.second)}"
-                            val textLayoutResult = textMeasurer.measure(tooltipText, TextStyle(color = TextWhite, fontSize = 12.sp, fontWeight = FontWeight.Bold))
-                            val tooltipWidth = textLayoutResult.size.width + 20.dp.toPx()
-                            val tooltipHeight = textLayoutResult.size.height + 16.dp.toPx()
-
-                            var tipX = cx + 12.dp.toPx()
-                            var tipY = cy - tooltipHeight - 12.dp.toPx()
-
-                            // 防止 Tooltip 越出画布边界
-                            if (tipX + tooltipWidth > width) tipX = cx - tooltipWidth - 12.dp.toPx()
-                            if (tipY < 0f) tipY = cy + 12.dp.toPx()
-
-                            drawRoundRect(color = Color(0xFF1E2D4A).copy(alpha = 0.95f), topLeft = Offset(tipX, tipY), size = Size(tooltipWidth, tooltipHeight), cornerRadius = CornerRadius(4.dp.toPx()))
-                            drawRoundRect(color = AccentCyan, topLeft = Offset(tipX, tipY), size = Size(tooltipWidth, tooltipHeight), cornerRadius = CornerRadius(4.dp.toPx()), style = Stroke(1.dp.toPx()))
-
-                            drawText(textLayoutResult, color = TextWhite, topLeft = Offset(tipX + 10.dp.toPx(), tipY + 8.dp.toPx()))
-                        }
-                    }
-                }
+                drawPath(path = path, color = AccentCyan, style = Stroke(width = 2.dp.toPx()))
             }
         }
 
-        Text("WAVENUMBER [CM-1] (波数)", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp))
+        Text("WAVENUMBER [CM-1] (波数)", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp))
+
+        Column(modifier = Modifier.align(Alignment.TopEnd).padding(24.dp).background(Color(0xFF2A364B).copy(alpha = 0.8f), RoundedCornerShape(4.dp)).padding(12.dp)) {
+            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.width(100.dp)) {
+                Text("Peak X", color = TextMuted, fontSize = 10.sp)
+                Text(viewModel.peakX, color = WarningOrange, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.width(100.dp)) {
+                Text("Peak Y", color = TextMuted, fontSize = 10.sp)
+                Text(viewModel.peakY, color = WarningOrange, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+
+        Column(modifier = Modifier.align(Alignment.BottomStart).padding(start = 60.dp, end = 40.dp, bottom = 40.dp).fillMaxWidth()) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("扫描进度 SCAN PROGRESS", color = AccentCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Text("${(viewModel.progress * 100).toInt()}%", color = AccentCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            LinearProgressIndicator(progress = { viewModel.progress }, modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(50)), color = AccentCyan, trackColor = BorderDark)
+        }
     }
 }
 
