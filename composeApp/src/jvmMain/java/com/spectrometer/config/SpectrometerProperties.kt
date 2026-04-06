@@ -6,8 +6,8 @@ class SpectrometerProperties {
     var udpPort: Int = 5025
     var boardName: String = "MAC_00_02_2C_08_1F_82"
     var laserFreq: Double = 15798.0
-    var savePath: String = "C:/SpectraData/Exports/"
-    var savePathWindows: String = "C:/SpectraData/Exports/"
+    var savePath: String = "D:/SpectraData/Exports/"
+    var savePathWindows: String = "D:/SpectraData/Exports/"
 
     var params = Params()
     var autoCollect = AutoCollect()

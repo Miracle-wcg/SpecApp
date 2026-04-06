@@ -58,7 +58,9 @@ public class MetadataParser {
     }
 
     public int extractNpts(ByteBuffer statusBuffer) {
-        if (statusTable == null || statusBuffer == null) return 0;
+        if (statusTable == null || statusBuffer == null) {
+            return 0;
+        }
         for (int i = 0; i < statusTable.size; i++) {
             if (INST_SPC_NPTS.equalsIgnoreCase(statusTable.status[i].name.trim())) {
                 statusBuffer.position(statusTable.status[i].index);
