@@ -18,7 +18,7 @@ class SpectrometerProperties {
         var secondGain: Short = 1
         var startWave: Float = 4000f
         var stopWave: Float = 8500f
-        var numScans: Int = 16
+        var numScans: Int = 10
         var numRuns: Int = 1
     }
 

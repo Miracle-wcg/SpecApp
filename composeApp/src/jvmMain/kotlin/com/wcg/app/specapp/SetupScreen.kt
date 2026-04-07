@@ -41,29 +41,42 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
     var stopWave by remember { mutableStateOf(config.params.stopWave.toString()) }
     var numScans by remember { mutableStateOf(config.params.numScans.toString()) }
     var numRuns by remember { mutableStateOf(config.params.numRuns.toString()) }
-    var resolution by remember { mutableStateOf(config.params.resolution.toString()) }
 
-    // 仅保留 First Gain
+    // 【优化 1】：将分辨率状态直接绑定为 Short 类型的底层真实数值
+    var resolution by remember { mutableStateOf(config.params.resolution) }
     var firstGain by remember { mutableStateOf(config.params.firstGain) }
 
     var savePath by remember { mutableStateOf(config.savePath) }
     var timeoutMs by remember { mutableStateOf(config.autoCollect.timeoutMs.toString()) }
 
-    // 【优化点 3】：按图示倒推增益值：3600(7), 1800(6), 900(5), 450(4), 225(3), 112(2), 56(1), 28(0)
+    // 【新增】：定义分辨率下拉框的选项字典 (左侧 Label to 右侧 Value)
+    val resolutionOptions = listOf(
+        "1 cm-1" to 0.toShort(),
+        "2 cm-1" to 1.toShort(),
+        "4 cm-1" to 2.toShort(),
+        "8 cm-1" to 3.toShort(),
+        "16 cm-1" to 4.toShort(),
+        "32 cm-1" to 5.toShort(),
+        "64 cm-1" to 6.toShort(),
+        "128 cm-1" to 7.toShort()
+    )
+
+    // 增益下拉框的选项字典
     val gainOptions = listOf(
-        "1.00" to 0.toShort(),
-        "3.01" to 1.toShort(),
-        "9.06" to 2.toShort(),
-        "27.13" to 3.toShort(),
-        "80.68" to 4.toShort(),
-        "237.84" to 5.toShort(),
-        "671.41" to 6.toShort(),
-        "3600.00" to 7.toShort()
+        "28" to 0.toShort(),
+        "56" to 1.toShort(),
+        "112" to 2.toShort(),
+        "225" to 3.toShort(),
+        "450" to 4.toShort(),
+        "900" to 5.toShort(),
+        "1800" to 6.toShort(),
+        "3600" to 7.toShort()
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
 
+            // --- 顶部标题与状态 ---
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column {
                     Row(verticalAlignment = Alignment.Bottom) {
@@ -144,9 +157,9 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                             }
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // 【优化点 1&2】：移除 Second Gain，并将增益改为美化后的下拉选框
+                            // 【优化 2】：将 RESOLUTION 替换为高颜值的下拉框组件，与 GAIN 完全对齐
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                DarkTextField("RESOLUTION", resolution, { resolution = it; it.toShortOrNull()?.let { v -> config.params.resolution = v } }, Modifier.weight(1f))
+                                DarkDropdownField("RESOLUTION (分辨率)", resolution, resolutionOptions, { resolution = it; config.params.resolution = it }, Modifier.weight(1f))
                                 DarkDropdownField("GAIN (增益)", firstGain, gainOptions, { firstGain = it; config.params.firstGain = it }, Modifier.weight(1f))
                             }
 
@@ -289,7 +302,7 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
 }
 
 // -------------------------------------------------------------------------
-// 核心自定义组件区 (整合优化后的下拉框)
+// 核心自定义组件区
 // -------------------------------------------------------------------------
 
 @Composable
@@ -344,11 +357,10 @@ fun DarkDropdownField(
             Spacer(modifier = Modifier.height(4.dp))
         }
         Box {
-            // 使用与 DarkTextField 完全相同的 OutlinedTextField 组件来保证高度与样式统一
             OutlinedTextField(
                 value = selectedLabel,
                 onValueChange = {},
-                readOnly = true, // 只读，禁止输入
+                readOnly = true,
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
@@ -366,14 +378,13 @@ fun DarkDropdownField(
                 shape = RoundedCornerShape(4.dp)
             )
 
-            // 覆盖一层透明的 Box 来拦截点击事件，触发下拉菜单
+            // 透明遮罩层拦截点击
             Box(
                 modifier = Modifier
                     .matchParentSize()
                     .clickable { expanded = true }
             )
 
-            // 下拉菜单
             DropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
@@ -385,7 +396,7 @@ fun DarkDropdownField(
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Text(option.first, color = TextWhite, fontSize = 14.sp)
                                 Spacer(modifier = Modifier.width(32.dp))
-                                // 右侧高亮显示映射的数值 Value
+                                // 右侧高亮显示底层发送的物理数值
                                 Text("${option.second}", color = AccentCyan, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
                             }
                         },
