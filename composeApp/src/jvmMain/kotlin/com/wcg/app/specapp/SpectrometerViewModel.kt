@@ -14,9 +14,7 @@ import java.io.File
 enum class ConnectionState { Disconnected, Connecting, Connected, Ready, Error }
 
 enum class AppScreen(val title: String, val icon: String) {
-    Analysis("采集分析", "📊"),
-    Setup("仪器设置", "☷"),
-    Settings("系统设置", "⚙")
+    Analysis("采集分析", "📊"), Setup("仪器设置", "☷"), Settings("系统设置", "⚙")
 }
 
 class SpectrometerViewModel {
@@ -118,34 +116,27 @@ class SpectrometerViewModel {
                         healthReport = (report as Map<String, Any>).toMap()
                     }
                 }
-
                 val cStat = driver.fetchCurrentStatus()
                 if (cStat != null) {
                     val meta = parser.parseDynamicMetadata(cStat)
-                    withContext(Dispatchers.Main) {
-                        systemMetadata = meta
-                    }
+                    withContext(Dispatchers.Main) { systemMetadata = meta }
                 }
-
-                withContext(Dispatchers.Main) {
-                    uiMessage = "✅ 硬件健康监控及系统扩展状态已刷新"
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+                withContext(Dispatchers.Main) { uiMessage = "✅ 硬件健康监控及系统扩展状态已刷新" }
+            } catch (e: Exception) { e.printStackTrace() }
         }
     }
 
     fun connectTcp() {
         scope.launch(Dispatchers.IO) {
             withContext(Dispatchers.Main) { connectionState = ConnectionState.Connecting }
-            val success = driver.connectTcp()
-            withContext(Dispatchers.Main) {
-                if (success) {
+            if (driver.connectTcp()) {
+                withContext(Dispatchers.Main) {
                     isTcpConnected = true
                     connectionState = ConnectionState.Connected
                     uiMessage = "✅ TCP 基础连接已成功建立"
-                } else {
+                }
+            } else {
+                withContext(Dispatchers.Main) {
                     isTcpConnected = false
                     connectionState = ConnectionState.Error
                     uiMessage = "❌ TCP 连接失败，请检查 IP 和端口"
@@ -188,7 +179,6 @@ class SpectrometerViewModel {
         if (!isBoardOpened) return
         scope.launch(Dispatchers.IO) {
             try {
-                // 【优化点 1】：Second Gain 始终传 0
                 config.params.secondGain = 0
                 driver.configure(config.params.resolution, config.params.firstGain, 0, config.params.startWave, config.params.stopWave)
                 withContext(Dispatchers.Main) {
@@ -196,7 +186,6 @@ class SpectrometerViewModel {
                     uiMessage = "✅ 光学及扫描参数已成功下发至硬件"
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
                 withContext(Dispatchers.Main) { isConfigApplied = false; uiMessage = "❌ 参数下发失败: ${e.message}" }
             }
         }
@@ -212,7 +201,6 @@ class SpectrometerViewModel {
         totalSweeps = config.params.numScans
         currentSweep = 0
         progress = 0f
-
         spectrumData = emptyList()
         peakX = "0.00"
         peakY = "0.000"
@@ -222,13 +210,11 @@ class SpectrometerViewModel {
                 driver.startCoaddition(config.params.numScans, config.params.numRuns)
                 val t0 = System.currentTimeMillis()
                 val timeout = config.autoCollect.timeoutMs + (config.params.numScans * 1500L)
-
                 var simulatedSweep = 0
 
                 while (isAcquiring) {
                     val statusBuf = driver.fetchCurrentStatus() ?: throw Exception("无法获取状态信息")
                     val coaddState = parser.extractControlValue(statusBuf, 11).toInt()
-
                     if (coaddState == 0) break
 
                     try {
@@ -270,22 +256,13 @@ class SpectrometerViewModel {
                 val finalMetadata = parser.parseDynamicMetadata(finalStatusBuf)
 
                 val savedPath = try {
-                    if (exportFormat == "SPC") {
-                        storage.saveToSpc(finalRawData, finalMetadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble(), config.savePath)
-                    } else {
-                        storage.saveToTxt(finalRawData, finalMetadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble(), config.savePath)
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    null
-                }
+                    if (exportFormat == "SPC") storage.saveToSpc(finalRawData, finalMetadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble(), config.savePath)
+                    else storage.saveToTxt(finalRawData, finalMetadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble(), config.savePath)
+                } catch (e: Exception) { null }
 
                 val finalXyData = try {
-                    if (savedPath != null) {
-                        storage.readFromFile(savedPath)
-                    } else {
-                        storage.getSpectrumDataArray(finalRawData, finalMetadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble())
-                    }
+                    if (savedPath != null) storage.readFromFile(savedPath)
+                    else storage.getSpectrumDataArray(finalRawData, finalMetadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble())
                 } catch (e: Exception) {
                     storage.getSpectrumDataArray(finalRawData, finalMetadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble())
                 }
@@ -307,7 +284,6 @@ class SpectrometerViewModel {
                 }
 
             } catch (e: Exception) {
-                e.printStackTrace()
                 withContext(Dispatchers.Main) { uiMessage = "❌ 采集异常: ${e.message}" }
             } finally {
                 withContext(Dispatchers.Main) { isAcquiring = false }
