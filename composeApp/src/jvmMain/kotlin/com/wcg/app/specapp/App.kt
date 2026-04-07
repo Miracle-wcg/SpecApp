@@ -1,14 +1,12 @@
 package com.wcg.app.specapp
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -20,6 +18,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.io.File
+import javax.swing.JFileChooser
+import javax.swing.filechooser.FileNameExtensionFilter
 
 @Composable
 fun App() {
@@ -27,8 +28,8 @@ fun App() {
 
     MaterialTheme {
         Column(modifier = Modifier.fillMaxSize().background(BgDark)) {
-            // 顶部导航栏
-            TopNavBar()
+            // 顶部导航栏，传入 viewModel 以便调用导入文件功能
+            TopNavBar(viewModel)
             HorizontalDivider(color = BorderDark, thickness = 1.dp)
 
             Row(modifier = Modifier.weight(1f)) {
@@ -46,7 +47,6 @@ fun App() {
                         AppScreen.Analysis -> AnalysisScreen(viewModel)
                         AppScreen.Setup -> SetupScreen(viewModel)
                         AppScreen.Settings -> SettingsScreen()
-//                        AppScreen.History -> Text("History Screen (WIP)", color = TextWhite)
                     }
                 }
             }
@@ -55,7 +55,7 @@ fun App() {
 }
 
 @Composable
-fun TopNavBar() {
+fun TopNavBar(viewModel: SpectrometerViewModel) {
     Row(
         modifier = Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 24.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -75,9 +75,31 @@ fun TopNavBar() {
 
         Spacer(modifier = Modifier.weight(1f))
 
-        Column(horizontalAlignment = Alignment.End) {
+        // 【新增】：全局打开数据文件按钮
+        OutlinedButton(
+            onClick = {
+                val chooser = JFileChooser(viewModel.config.savePath).apply {
+                    dialogTitle = "选择历史光谱数据文件"
+                    fileFilter = FileNameExtensionFilter("光谱文件 (*.spc, *.txt)", "spc", "txt")
+                    isAcceptAllFileFilterUsed = false
+                }
+                if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+                    // 读取文件
+                    viewModel.importDataFile(chooser.selectedFile.absolutePath)
+                    // UX优化：如果在其他页面导入了数据，自动跳转到分析图表页展示
+                    if (viewModel.currentScreen != AppScreen.Analysis) {
+                        viewModel.currentScreen = AppScreen.Analysis
+                    }
+                }
+            },
+            modifier = Modifier.height(36.dp), shape = RoundedCornerShape(4.dp),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextWhite), border = BorderStroke(1.dp, BorderDark)
+        ) {
+            Text("📂 打开数据", fontWeight = FontWeight.Bold, fontSize = 12.sp)
         }
+
         Spacer(modifier = Modifier.width(24.dp))
+
         Box(
             modifier = Modifier.size(32.dp).background(PanelBg, RoundedCornerShape(50))
                 .border(1.dp, BorderDark, RoundedCornerShape(50)), contentAlignment = Alignment.Center

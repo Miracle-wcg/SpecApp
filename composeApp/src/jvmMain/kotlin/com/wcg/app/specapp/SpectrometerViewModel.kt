@@ -14,7 +14,9 @@ import java.io.File
 enum class ConnectionState { Disconnected, Connecting, Connected, Ready, Error }
 
 enum class AppScreen(val title: String, val icon: String) {
-    Analysis("采集分析", "📊"), Setup("仪器设置", "☷"), Settings("系统设置", "⚙")
+    Analysis("采集分析", "📊"),
+    Setup("仪器设置", "☷"),
+    Settings("系统设置", "⚙")
 }
 
 class SpectrometerViewModel {
@@ -210,12 +212,18 @@ class SpectrometerViewModel {
                 driver.startCoaddition(config.params.numScans, config.params.numRuns)
                 val t0 = System.currentTimeMillis()
                 val timeout = config.autoCollect.timeoutMs + (config.params.numScans * 1500L)
-                var simulatedSweep = 0
+
+                // 【核心修改】：估算总耗时，这里假设单次累加(Co-add)耗时约 1000ms
+                val estimatedTotalTimeMs = (config.params.numScans * 1000L).coerceAtLeast(1000L)
 
                 while (isAcquiring) {
                     val statusBuf = driver.fetchCurrentStatus() ?: throw Exception("无法获取状态信息")
                     val coaddState = parser.extractControlValue(statusBuf, 11).toInt()
                     if (coaddState == 0) break
+
+                    // 【核心修改】：根据流逝的绝对时间计算百分比进度，最高卡在 99% 等待硬件最终完成
+                    val elapsedMs = System.currentTimeMillis() - t0
+                    val timeProgress = (elapsedMs.toFloat() / estimatedTotalTimeMs).coerceIn(0f, 0.99f)
 
                     try {
                         val nPts = parser.extractNpts(statusBuf)
@@ -234,16 +242,15 @@ class SpectrometerViewModel {
                                         peakX = String.format("%.2f", maxPoint.first)
                                         peakY = String.format("%.4f", maxPoint.second)
                                     }
-                                    simulatedSweep = minOf(simulatedSweep + 1, totalSweeps - 1)
-                                    currentSweep = simulatedSweep
-                                    progress = simulatedSweep.toFloat() / totalSweeps
+                                    progress = timeProgress
+                                    currentSweep = (timeProgress * totalSweeps).toInt()
                                 }
                             }
                         }
                     } catch (e: Exception) {}
 
                     if (System.currentTimeMillis() - t0 > timeout) throw Exception("扫描执行超时")
-                    delay(300)
+                    delay(200) // 提高刷新频率，让时间进度条更丝滑
                 }
 
                 if (!isAcquiring) return@launch
