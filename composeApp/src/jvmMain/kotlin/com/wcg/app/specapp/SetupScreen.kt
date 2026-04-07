@@ -26,7 +26,6 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // 监听 ViewModel 中的消息并弹出 Snackbar
     LaunchedEffect(viewModel.uiMessage) {
         viewModel.uiMessage?.let {
             snackbarHostState.showSnackbar(message = it, duration = SnackbarDuration.Short)
@@ -37,7 +36,9 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
     var serverIp by remember { mutableStateOf(config.serverIp) }
     var tcpPort by remember { mutableStateOf(config.tcpPort.toString()) }
     var udpPort by remember { mutableStateOf(config.udpPort.toString()) }
-    var boardName by remember { mutableStateOf(config.boardName) }
+
+    // 注意：这里没有 var boardName，直接在下面使用 viewModel.boardName !
+
     var laserFreq by remember { mutableStateOf(config.laserFreq.toString()) }
     var startWave by remember { mutableStateOf(config.params.startWave.toString()) }
     var stopWave by remember { mutableStateOf(config.params.stopWave.toString()) }
@@ -60,7 +61,6 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
         "450" to 4.toShort(), "900" to 5.toShort(), "1800" to 6.toShort(), "3600" to 7.toShort()
     )
 
-    // 【优化 1】：固定的健康状态核心模块列表
     val fixedHealthGroups = listOf(
         "IR Source", "Metrology", "Electronic", "Detector",
         "Interferometer", "Co-addition", "Firmware"
@@ -118,7 +118,16 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
 
                         SetupCard(title = "📡 步骤 2：板卡握手 (UDP)", subtitle = "BOARD INITIALIZATION") {
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                DarkTextField("BOARD NAME", boardName, { boardName = it; config.boardName = it }, Modifier.weight(1.5f))
+                                // 【核心修复】：直接绑定 viewModel.boardName，网络更新后 UI 会瞬间自动刷新
+                                DarkTextField(
+                                    label = "BOARD NAME",
+                                    value = viewModel.boardName,
+                                    onValueChange = {
+                                        viewModel.boardName = it
+                                        config.boardName = it
+                                    },
+                                    modifier = Modifier.weight(1.5f)
+                                )
                                 DarkTextField("UDP PORT", udpPort, { udpPort = it; it.toIntOrNull()?.let { v -> config.udpPort = v } }, Modifier.weight(1f))
                             }
                             Spacer(modifier = Modifier.height(16.dp))
@@ -131,7 +140,6 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                         }
 
                         SetupCard(title = "☷ 步骤 3：扫描与光学参数", subtitle = "PARAMETERS & OPTICS") {
-                            // 【优化 2】：在所有参数变更回调中加入 viewModel.isConfigApplied = false，支持多次下发
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                                 DarkTextField("START WAVE", startWave, { startWave = it; it.toFloatOrNull()?.let { v -> config.params.startWave = v }; viewModel.isConfigApplied = false }, Modifier.weight(1f))
                                 DarkTextField("STOP WAVE", stopWave, { stopWave = it; it.toFloatOrNull()?.let { v -> config.params.stopWave = v }; viewModel.isConfigApplied = false }, Modifier.weight(1f))
@@ -200,7 +208,6 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
 
                             val report = viewModel.healthReport
 
-                            // 【优化 1】：不再动态解析全量子项，而是基于核心模块呈现固定列表，UI 整洁统一
                             Column(modifier = Modifier.fillMaxWidth().border(1.dp, BorderDark, RoundedCornerShape(4.dp)).padding(8.dp)) {
                                 fixedHealthGroups.forEachIndexed { index, groupName ->
                                     val groupData = report?.get(groupName) as? Map<*, *>
@@ -250,13 +257,12 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                                             savePath = path
                                             config.savePath = path
                                             config.savePathWindows = path
-                                            // 【优化 3】：路径变更触发配置已更新提示
                                             viewModel.uiMessage = "✅ 存储路径已更新"
                                         }
                                     },
                                     shape = RoundedCornerShape(4.dp),
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2B3648)),
-                                    modifier = Modifier.height(40.dp).width(44.dp),
+                                    modifier = Modifier.height(48.dp).width(48.dp),
                                     contentPadding = PaddingValues(0.dp)
                                 ) { Text("📁") }
                             }
@@ -272,7 +278,6 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                                 FormatButton("TXT", "文本格式", viewModel.exportFormat == "TXT", Modifier.weight(1f)) {
                                     if (viewModel.exportFormat != "TXT") {
                                         viewModel.exportFormat = "TXT"
-                                        // 【优化 3】：格式变更触发配置已更新提示
                                         viewModel.uiMessage = "✅ 导出格式已切换为 TXT"
                                     }
                                 }
@@ -392,8 +397,8 @@ fun DarkDropdownField(
                 onValueChange = {},
                 readOnly = true,
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                textStyle = LocalTextStyle.current.copy(fontSize = 12.sp),
                 trailingIcon = {
                     Text("▾", color = if (expanded) AccentCyan else TextMuted, fontSize = 16.sp, modifier = Modifier.padding(end = 8.dp))
                 },
@@ -405,7 +410,6 @@ fun DarkDropdownField(
                     unfocusedContainerColor = BgDark,
                     focusedContainerColor = BgDark
                 ),
-                // 删除了 contentPadding
                 shape = RoundedCornerShape(4.dp)
             )
 

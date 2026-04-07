@@ -37,6 +37,9 @@ class SpectrometerViewModel {
 
     var uiMessage by mutableStateOf<String?>(null)
 
+    // 【核心】：全局双向绑定的板卡名称状态，改变它会立刻触发 UI 刷新
+    var boardName by mutableStateOf(config.boardName)
+
     var boardInfo by mutableStateOf<AcquisitionDriverClient.BoardInformation?>(null)
     var firmwareVersion by mutableStateOf("N/A")
     var instrumentType by mutableStateOf("N/A")
@@ -132,10 +135,19 @@ class SpectrometerViewModel {
         scope.launch(Dispatchers.IO) {
             withContext(Dispatchers.Main) { connectionState = ConnectionState.Connecting }
             if (driver.connectTcp()) {
+                // TCP 连接成功后立刻拉取 BoardInfo 信息表
+                val detectedName = driver.autoDetectBoardName()
+
                 withContext(Dispatchers.Main) {
                     isTcpConnected = true
                     connectionState = ConnectionState.Connected
-                    uiMessage = "✅ TCP 基础连接已成功建立"
+                    if (detectedName.isNotEmpty()) {
+                        boardName = detectedName       // 更新 ViewModel 状态以触发 UI 刷新
+                        config.boardName = detectedName // 同步写入底层属性配置
+                        uiMessage = "✅ TCP 已连接，自动识别板卡: $detectedName"
+                    } else {
+                        uiMessage = "✅ TCP 基础连接已建立，但未探测到默认板卡名称"
+                    }
                 }
             } else {
                 withContext(Dispatchers.Main) {
@@ -171,7 +183,7 @@ class SpectrometerViewModel {
                 withContext(Dispatchers.Main) {
                     isBoardOpened = false
                     connectionState = ConnectionState.Error
-                    uiMessage = "❌ 板卡打开失败，请检查 UDP 端口"
+                    uiMessage = "❌ 板卡打开失败，请检查 UDP 端口及板卡名称"
                 }
             }
         }
@@ -212,8 +224,6 @@ class SpectrometerViewModel {
                 driver.startCoaddition(config.params.numScans, config.params.numRuns)
                 val t0 = System.currentTimeMillis()
                 val timeout = config.autoCollect.timeoutMs + (config.params.numScans * 1500L)
-
-                // 【核心修改】：估算总耗时，这里假设单次累加(Co-add)耗时约 1000ms
                 val estimatedTotalTimeMs = (config.params.numScans * 1000L).coerceAtLeast(1000L)
 
                 while (isAcquiring) {
@@ -221,7 +231,6 @@ class SpectrometerViewModel {
                     val coaddState = parser.extractControlValue(statusBuf, 11).toInt()
                     if (coaddState == 0) break
 
-                    // 【核心修改】：根据流逝的绝对时间计算百分比进度，最高卡在 99% 等待硬件最终完成
                     val elapsedMs = System.currentTimeMillis() - t0
                     val timeProgress = (elapsedMs.toFloat() / estimatedTotalTimeMs).coerceIn(0f, 0.99f)
 
@@ -250,7 +259,7 @@ class SpectrometerViewModel {
                     } catch (e: Exception) {}
 
                     if (System.currentTimeMillis() - t0 > timeout) throw Exception("扫描执行超时")
-                    delay(200) // 提高刷新频率，让时间进度条更丝滑
+                    delay(200)
                 }
 
                 if (!isAcquiring) return@launch

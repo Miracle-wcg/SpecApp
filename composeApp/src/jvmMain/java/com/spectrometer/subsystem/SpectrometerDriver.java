@@ -188,4 +188,40 @@ public class SpectrometerDriver {
     public boolean isBoardOpened() { return boardOpened; }
     public boolean isConnected() { return boardOpened; }
     public AcquisitionDriverClient.BoardInformation getBoardInfo() { return boardInfo; }
+
+    /**
+     * 遵循 TestClient 官方逻辑，通过板卡信息表自动获取第一块板卡的 Instrument Name
+     */
+    public String autoDetectBoardName() {
+        try {
+            if (client != null) {
+                // 1. 获取设备数量
+                int count = client.acqGetBoardCount();
+                if (count > 0) {
+                    // 2. 拉取设备信息表
+                    ByteBuffer boardInfo = client.acqGetBoardInfo(count);
+                    if (boardInfo != null && boardInfo.capacity() >= 64) {
+                        boardInfo.position(0); // 读取第一块板卡 (i=0)
+
+                        // 3. 提取前 64 字节
+                        byte[] nameBytes = new byte[64];
+                        boardInfo.get(nameBytes);
+
+                        // 4. ABB 通信规范底层字符使用 UTF-16LE 编码
+                        String name = new String(nameBytes, "UTF-16LE");
+
+                        // 5. C++ 字符串通过 \0 结尾，需要截断冗余的空字符
+                        int nullIdx = name.indexOf('\0');
+                        if (nullIdx >= 0) {
+                            name = name.substring(0, nullIdx);
+                        }
+                        return name.trim();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("自动获取板卡名称失败: " + e.getMessage());
+        }
+        return "";
+    }
 }
