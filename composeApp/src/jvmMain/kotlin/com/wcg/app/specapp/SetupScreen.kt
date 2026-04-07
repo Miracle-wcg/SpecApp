@@ -3,6 +3,7 @@ package com.wcg.app.specapp
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,10 +42,24 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
     var numScans by remember { mutableStateOf(config.params.numScans.toString()) }
     var numRuns by remember { mutableStateOf(config.params.numRuns.toString()) }
     var resolution by remember { mutableStateOf(config.params.resolution.toString()) }
-    var firstGain by remember { mutableStateOf(config.params.firstGain.toString()) }
-    var secondGain by remember { mutableStateOf(config.params.secondGain.toString()) }
+
+    // 仅保留 First Gain
+    var firstGain by remember { mutableStateOf(config.params.firstGain) }
+
     var savePath by remember { mutableStateOf(config.savePath) }
     var timeoutMs by remember { mutableStateOf(config.autoCollect.timeoutMs.toString()) }
+
+    // 【优化点 3】：按图示倒推增益值：3600(7), 1800(6), 900(5), 450(4), 225(3), 112(2), 56(1), 28(0)
+    val gainOptions = listOf(
+        "1.00" to 0.toShort(),
+        "3.01" to 1.toShort(),
+        "9.06" to 2.toShort(),
+        "27.13" to 3.toShort(),
+        "80.68" to 4.toShort(),
+        "237.84" to 5.toShort(),
+        "671.41" to 6.toShort(),
+        "3600.00" to 7.toShort()
+    )
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -128,11 +143,13 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                                 DarkTextField("LASER FREQ", laserFreq, { laserFreq = it; it.toDoubleOrNull()?.let { v -> config.laserFreq = v } }, Modifier.weight(1f))
                             }
                             Spacer(modifier = Modifier.height(16.dp))
+
+                            // 【优化点 1&2】：移除 Second Gain，并将增益改为美化后的下拉选框
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                                 DarkTextField("RESOLUTION", resolution, { resolution = it; it.toShortOrNull()?.let { v -> config.params.resolution = v } }, Modifier.weight(1f))
-                                DarkTextField("FIRST GAIN", firstGain, { firstGain = it; it.toShortOrNull()?.let { v -> config.params.firstGain = v } }, Modifier.weight(1f))
-                                DarkTextField("SECOND GAIN", secondGain, { secondGain = it; it.toShortOrNull()?.let { v -> config.params.secondGain = v } }, Modifier.weight(1f))
+                                DarkDropdownField("GAIN (增益)", firstGain, gainOptions, { firstGain = it; config.params.firstGain = it }, Modifier.weight(1f))
                             }
+
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(
                                 onClick = { viewModel.applyParameters() },
@@ -145,12 +162,28 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                         }
                     }
 
-                    // === 右列：身份反馈与存储 ===
+                    // === 右列：身份反馈与监控 ===
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(20.dp)) {
 
                         SetupCard(title = "🏥 仪器身份与健康监控", subtitle = "HEALTH & DIAGNOSTICS") {
+
                             InfoRow("Instrument Type", viewModel.instrumentType)
                             InfoRow("Firmware Version", viewModel.firmwareVersion)
+
+                            val sysMeta = viewModel.systemMetadata
+                            if (sysMeta != null) {
+                                val configSetup = sysMeta["Configuration Setup"]
+                                val valId = sysMeta["Validation ID"]
+                                val valState = sysMeta["Validation State"]
+                                val usbConn = sysMeta["USB connection Flag"]
+                                val usbAcc = sysMeta["USB Accessory Type"]
+
+                                if (configSetup != null) InfoRow("Config Setup", configSetup)
+                                if (valId != null) InfoRow("Validation ID", valId)
+                                if (valState != null) InfoRow("Validation State", valState)
+                                if (usbConn != null) InfoRow("USB Connection", usbConn)
+                                if (usbAcc != null) InfoRow("USB Accessory", usbAcc)
+                            }
 
                             Spacer(modifier = Modifier.height(16.dp))
 
@@ -255,6 +288,10 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
     }
 }
 
+// -------------------------------------------------------------------------
+// 核心自定义组件区 (整合优化后的下拉框)
+// -------------------------------------------------------------------------
+
 @Composable
 fun ConnectionPipelineBanner(isTcpOk: Boolean, isBoardOk: Boolean, isConfigOk: Boolean) {
     Row(
@@ -284,5 +321,82 @@ fun InfoRow(label: String, value: String) {
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(label, color = TextMuted, fontSize = 12.sp)
         Text(value, color = TextWhite, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+/**
+ * 【完整对齐版】：使用 OutlinedTextField 保证与 DarkTextField 高度 100% 统一
+ */
+@Composable
+fun DarkDropdownField(
+    label: String,
+    selectedValue: Short,
+    options: List<Pair<String, Short>>,
+    onValueChange: (Short) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = options.find { it.second == selectedValue }?.first ?: selectedValue.toString()
+
+    Column(modifier = modifier) {
+        if (label.isNotEmpty()) {
+            Text(label, color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(4.dp))
+        }
+        Box {
+            // 使用与 DarkTextField 完全相同的 OutlinedTextField 组件来保证高度与样式统一
+            OutlinedTextField(
+                value = selectedLabel,
+                onValueChange = {},
+                readOnly = true, // 只读，禁止输入
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
+                trailingIcon = {
+                    Text("▾", color = if (expanded) AccentCyan else TextMuted, fontSize = 16.sp, modifier = Modifier.padding(end = 8.dp))
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = BorderDark,
+                    focusedBorderColor = AccentCyan,
+                    unfocusedTextColor = TextWhite,
+                    focusedTextColor = TextWhite,
+                    unfocusedContainerColor = BgDark,
+                    focusedContainerColor = BgDark
+                ),
+                shape = RoundedCornerShape(4.dp)
+            )
+
+            // 覆盖一层透明的 Box 来拦截点击事件，触发下拉菜单
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clickable { expanded = true }
+            )
+
+            // 下拉菜单
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.background(PanelBg).border(1.dp, BorderDark)
+            ) {
+                options.forEach { option ->
+                    DropdownMenuItem(
+                        text = {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Text(option.first, color = TextWhite, fontSize = 14.sp)
+                                Spacer(modifier = Modifier.width(32.dp))
+                                // 右侧高亮显示映射的数值 Value
+                                Text("${option.second}", color = AccentCyan, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
+                            }
+                        },
+                        onClick = {
+                            onValueChange(option.second)
+                            expanded = false
+                        },
+                        modifier = Modifier.background(if (selectedValue == option.second) Color(0xFF1E2D4A) else Color.Transparent)
+                    )
+                }
+            }
+        }
     }
 }
