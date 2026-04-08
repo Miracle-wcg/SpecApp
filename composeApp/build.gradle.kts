@@ -46,11 +46,20 @@ compose.desktop {
                 TargetFormat.Msi
             )
 
-            packageName = "specapp"
+            packageName = "SpectraX"
             packageVersion = "1.0.0"
 
             description = "Spec Application"
-            vendor = "Your Company"
+            vendor = "wcg"
+
+            modules(
+                "java.base",
+                "java.desktop",
+                "java.logging",
+                "java.naming",
+                "java.sql",
+                "java.management"
+            )
 
             windows {
                 // ✔ EXE 图标
@@ -70,6 +79,9 @@ compose.desktop {
 
                 // ✔ 升级支持
                 upgradeUuid = "123e4567-e89b-12d3-a456-426614174000"
+
+                // 👇 安装目录名称
+                dirChooser = true
             }
 
             buildTypes.release.proguard {

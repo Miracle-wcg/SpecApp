@@ -60,7 +60,7 @@ fun TopNavBar(viewModel: SpectrometerViewModel) {
         modifier = Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 24.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("SpectraPro Precision", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = AccentCyan)
+        Text("SpectraX", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = AccentCyan)
         Spacer(modifier = Modifier.width(48.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {

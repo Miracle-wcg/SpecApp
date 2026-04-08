@@ -14,7 +14,7 @@ fun main() = application {
 
     Window(
         onCloseRequest = ::exitApplication,
-        title = "Spectral Core Control Center (光谱控制中心)",
+        title = "SpectraX",
         state = windowState,
         // 新增：读取 resources 目录下的 logo.png 作为窗口图标
         icon = painterResource("logo.png")
