@@ -62,7 +62,7 @@ private fun SystemStatusPanel(modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.height(24.dp))
 
             // 模拟系统全局状态
-            ConfigRow("Application Version", "v1.0.4-Beta", true)
+            ConfigRow("Application Version", "v1.0.1", true)
             HorizontalDivider(color = BorderDark, thickness = 1.dp, modifier = Modifier.padding(vertical = 12.dp))
             ConfigRow("JVM Environment", System.getProperty("java.version"))
             HorizontalDivider(color = BorderDark, thickness = 1.dp, modifier = Modifier.padding(vertical = 12.dp))
