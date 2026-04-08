@@ -79,9 +79,7 @@ compose.desktop {
 
                 // ✔ 升级支持
                 upgradeUuid = "123e4567-e89b-12d3-a456-426614174000"
-
-                // 👇 安装目录名称
-                dirChooser = true
+                perUserInstall = true
             }
 
             buildTypes.release.proguard {
