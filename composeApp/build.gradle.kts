@@ -41,9 +41,40 @@ compose.desktop {
         mainClass = "com.wcg.app.specapp.MainKt"
 
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.wcg.app.specapp"
+            targetFormats(
+                TargetFormat.Exe,
+                TargetFormat.Msi
+            )
+
+            packageName = "specapp"
             packageVersion = "1.0.0"
+
+            description = "Spec Application"
+            vendor = "Your Company"
+
+            windows {
+                // ✔ EXE 图标
+                iconFile.set(project.file("src/jvmMain/resources/icon.ico"))
+
+                // ✔ 控制台关闭（桌面应用建议）
+                console = false
+
+                // ✔ 安装目录
+                dirChooser = true
+
+                // ✔ 快捷方式
+                shortcut = true
+
+                // ✔ 开机菜单
+                menu = true
+
+                // ✔ 升级支持
+                upgradeUuid = "123e4567-e89b-12d3-a456-426614174000"
+            }
+
+            buildTypes.release.proguard {
+                isEnabled.set(false)
+            }
         }
     }
 }
