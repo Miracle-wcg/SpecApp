@@ -15,9 +15,9 @@ import java.io.File
 enum class ConnectionState { Disconnected, Connecting, Connected, Ready, Error }
 
 enum class AppScreen(val title: String, val icon: String) {
-    Analysis("采集分析", "📊"),
-    Setup("仪器设置", "☷"),
-    Settings("系统设置", "⚙")
+    Analysis("采集分析 / Analysis", "📊"),
+    Setup("仪器设置 / Setup", "☷"),
+    Settings("系统设置 / Settings", "⚙")
 }
 
 class SpectrometerViewModel {

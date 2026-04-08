@@ -55,22 +55,19 @@ private fun SystemStatusPanel(modifier: Modifier = Modifier) {
     ) {
         Column(modifier = Modifier.padding(20.dp).fillMaxSize()) {
             Row(verticalAlignment = Alignment.Bottom) {
-                Text("🖥️ 运行状态与监控", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("SYSTEM STATUS", color = TextMuted, fontSize = 10.sp, modifier = Modifier.padding(bottom = 2.dp))
+                Text("🖥️ 运行状态与监控 / System Status", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 模拟系统全局状态
-            ConfigRow("Application Version", "v1.0.1", true)
+            ConfigRow("应用版本 / Application Version", "v1.0.1", true)
             HorizontalDivider(color = BorderDark, thickness = 1.dp, modifier = Modifier.padding(vertical = 12.dp))
-            ConfigRow("JVM Environment", System.getProperty("java.version"))
+            ConfigRow("JVM 环境 / JVM Environment", System.getProperty("java.version"))
             HorizontalDivider(color = BorderDark, thickness = 1.dp, modifier = Modifier.padding(vertical = 12.dp))
-            ConfigRow("OS Architecture", System.getProperty("os.name") + " " + System.getProperty("os.arch"))
+            ConfigRow("系统架构 / OS Architecture", System.getProperty("os.name") + " " + System.getProperty("os.arch"))
             HorizontalDivider(color = BorderDark, thickness = 1.dp, modifier = Modifier.padding(vertical = 12.dp))
-            ConfigRow("Logback Engine", "Active", true)
+            ConfigRow("日志引擎 / Logback Engine", "Active", true)
             HorizontalDivider(color = BorderDark, thickness = 1.dp, modifier = Modifier.padding(vertical = 12.dp))
-            ConfigRow("Local Storage Path", System.getProperty("user.dir"))
+            ConfigRow("本地存储路径 / Local Storage Path", System.getProperty("user.dir"))
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -79,9 +76,9 @@ private fun SystemStatusPanel(modifier: Modifier = Modifier) {
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("All Systems Operational", color = Color(0xFF10B981), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Text("所有系统运行正常 / All Systems Operational", color = Color(0xFF10B981), fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("Memory Usage: ~124 MB", color = TextMuted, fontSize = 12.sp)
+                    Text("内存使用 / Memory Usage: ~124 MB", color = TextMuted, fontSize = 12.sp)
                 }
             }
         }
@@ -172,16 +169,15 @@ private fun SystemLogPanel(modifier: Modifier = Modifier) {
         Column(modifier = Modifier.padding(16.dp).fillMaxSize()) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Row(verticalAlignment = Alignment.Bottom) {
-                    Text("📄 实时执行日志", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text("📄 实时执行日志 / Real-time Logs", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(logFile.absolutePath, color = TextMuted, fontSize = 10.sp, modifier = Modifier.padding(bottom = 2.dp))
                 }
 
-                // 清空控制台按钮 (仅清空 UI，不清空物理文件)
                 Box(
                     modifier = Modifier.border(1.dp, BorderDark, RoundedCornerShape(4.dp)).clickable { logLines.clear() }.padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
-                    Text("CLEAR", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Text("清空 / CLEAR", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))

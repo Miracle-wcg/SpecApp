@@ -28,20 +28,17 @@ fun App() {
 
     MaterialTheme {
         Column(modifier = Modifier.fillMaxSize().background(BgDark)) {
-            // 顶部导航栏，传入 viewModel 以便调用导入文件功能
             TopNavBar(viewModel)
             HorizontalDivider(color = BorderDark, thickness = 1.dp)
 
             Row(modifier = Modifier.weight(1f)) {
-                // 左侧导航菜单
                 Sidebar(
                     currentScreen = viewModel.currentScreen,
                     onScreenSelected = { viewModel.currentScreen = it },
-                    modifier = Modifier.width(240.dp).fillMaxHeight()
+                    modifier = Modifier.width(280.dp).fillMaxHeight() // 稍微加宽以适应中英文
                 )
                 VerticalDivider(color = BorderDark, thickness = 1.dp)
 
-                // 右侧主工作区路由分发
                 Box(modifier = Modifier.weight(1f).fillMaxHeight().padding(24.dp)) {
                     when (viewModel.currentScreen) {
                         AppScreen.Analysis -> AnalysisScreen(viewModel)
@@ -65,7 +62,7 @@ fun TopNavBar(viewModel: SpectrometerViewModel) {
 
         Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
             Text(
-                "Instruments",
+                "仪器 / Instruments",
                 color = TextWhite,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
@@ -75,18 +72,15 @@ fun TopNavBar(viewModel: SpectrometerViewModel) {
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // 【新增】：全局打开数据文件按钮
         OutlinedButton(
             onClick = {
                 val chooser = JFileChooser(viewModel.config.savePath).apply {
-                    dialogTitle = "选择历史光谱数据文件"
-                    fileFilter = FileNameExtensionFilter("光谱文件 (*.spc, *.txt)", "spc", "txt")
+                    dialogTitle = "选择历史光谱数据文件 / Choose Spectrum File"
+                    fileFilter = FileNameExtensionFilter("光谱文件 / Spectral Files (*.spc, *.txt)", "spc", "txt")
                     isAcceptAllFileFilterUsed = false
                 }
                 if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-                    // 读取文件
                     viewModel.importDataFile(chooser.selectedFile.absolutePath)
-                    // UX优化：如果在其他页面导入了数据，自动跳转到分析图表页展示
                     if (viewModel.currentScreen != AppScreen.Analysis) {
                         viewModel.currentScreen = AppScreen.Analysis
                     }
@@ -95,7 +89,7 @@ fun TopNavBar(viewModel: SpectrometerViewModel) {
             modifier = Modifier.height(36.dp), shape = RoundedCornerShape(4.dp),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = TextWhite), border = BorderStroke(1.dp, BorderDark)
         ) {
-            Text("📂 打开数据", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Text("📂 打开数据 / Open Data", fontWeight = FontWeight.Bold, fontSize = 12.sp)
         }
 
         Spacer(modifier = Modifier.width(24.dp))
@@ -109,7 +103,6 @@ fun TopNavBar(viewModel: SpectrometerViewModel) {
     }
 }
 
-// Navbar 的下划线特效
 fun Modifier.drawUnderline(): Modifier = this.drawBehind {
     val strokeWidth = 2.dp.toPx()
     val y = size.height + 4.dp.toPx()
@@ -119,8 +112,8 @@ fun Modifier.drawUnderline(): Modifier = this.drawBehind {
 @Composable
 fun Sidebar(currentScreen: AppScreen, onScreenSelected: (AppScreen) -> Unit, modifier: Modifier = Modifier) {
     Column(modifier = modifier.background(BgDark).padding(20.dp)) {
-        Text("SYSTEM ALPHA", color = TextWhite, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-        Text("Instrument Online", color = TextMuted, fontSize = 12.sp)
+        Text("系统 ALPHA / SYSTEM ALPHA", color = TextWhite, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        Text("仪器在线 / Instrument Online", color = TextMuted, fontSize = 12.sp)
 
         Spacer(modifier = Modifier.height(32.dp))
 
