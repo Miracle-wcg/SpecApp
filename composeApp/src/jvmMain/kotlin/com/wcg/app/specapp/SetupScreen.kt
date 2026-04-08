@@ -1,8 +1,13 @@
 package com.wcg.app.specapp
 
-import androidx.compose.foundation.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,8 +36,6 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
     var serverIp by remember { mutableStateOf(config.serverIp) }
     var tcpPort by remember { mutableStateOf(config.tcpPort.toString()) }
     var udpPort by remember { mutableStateOf(config.udpPort.toString()) }
-
-    // 注意：这里没有 var boardName，直接在下面使用 viewModel.boardName !
 
     var laserFreq by remember { mutableStateOf(config.laserFreq.toString()) }
     var startWave by remember { mutableStateOf(config.params.startWave.toString()) }
@@ -64,32 +67,18 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column {
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text("仪器设置 ", color = TextWhite, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                        Text(
-                            "/ Instrument Setup",
-                            color = TextMuted,
-                            fontSize = 18.sp,
-                            modifier = Modifier.padding(bottom = 2.dp)
-                        )
+                        Text("/ Instrument Setup", color = TextMuted, fontSize = 18.sp, modifier = Modifier.padding(bottom = 2.dp))
                     }
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
                         val isReady = viewModel.isBoardOpened
                         val statusColor = if (isReady) Color(0xFF10B981) else WarningOrange
                         Box(modifier = Modifier.size(8.dp).background(statusColor, RoundedCornerShape(50)))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            if (isReady) "设备已连接就绪 (ONLINE)" else "设备未连接 (OFFLINE)",
-                            color = statusColor,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Text(if (isReady) "设备已连接就绪 (ONLINE)" else "设备未连接 (OFFLINE)", color = statusColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
 
@@ -103,11 +92,7 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
             }
 
             Spacer(modifier = Modifier.height(20.dp))
-            ConnectionPipelineBanner(
-                isTcpOk = viewModel.isTcpConnected,
-                isBoardOk = viewModel.isBoardOpened,
-                isConfigOk = viewModel.isConfigApplied
-            )
+            ConnectionPipelineBanner(isTcpOk = viewModel.isTcpConnected, isBoardOk = viewModel.isBoardOpened, isConfigOk = viewModel.isConfigApplied)
             Spacer(modifier = Modifier.height(24.dp))
 
             Column(modifier = Modifier.weight(1f).verticalScroll(scrollState).padding(bottom = 80.dp)) {
@@ -118,136 +103,47 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
 
                         SetupCard(title = "🌐 步骤 1：通讯配置 (TCP)", subtitle = "TCP COMMUNICATION") {
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                DarkTextField(
-                                    "SERVER IP",
-                                    serverIp,
-                                    { serverIp = it; config.serverIp = it },
-                                    Modifier.weight(1.5f)
-                                )
-                                DarkTextField(
-                                    "TCP PORT",
-                                    tcpPort,
-                                    { tcpPort = it; it.toIntOrNull()?.let { v -> config.tcpPort = v } },
-                                    Modifier.weight(1f)
-                                )
+                                DarkTextField("SERVER IP", serverIp, { serverIp = it; config.serverIp = it }, Modifier.weight(1.5f))
+                                DarkTextField("TCP PORT", tcpPort, { tcpPort = it; it.toIntOrNull()?.let { v -> config.tcpPort = v } }, Modifier.weight(1f))
                             }
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(
                                 onClick = { viewModel.connectTcp() },
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (viewModel.isTcpConnected) Color(
-                                        0xFF10B981
-                                    ) else AccentCyan
-                                )
-                            ) {
-                                Text(
-                                    if (viewModel.isTcpConnected) "✓ TCP 已连接" else "1. 建立基础 TCP 连接",
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (viewModel.isTcpConnected) TextWhite else BgDark
-                                )
-                            }
+                                colors = ButtonDefaults.buttonColors(containerColor = if (viewModel.isTcpConnected) Color(0xFF10B981) else AccentCyan)
+                            ) { Text(if (viewModel.isTcpConnected) "✓ TCP 已连接" else "1. 建立基础 TCP 连接", fontWeight = FontWeight.Bold, color = if (viewModel.isTcpConnected) TextWhite else BgDark) }
                         }
 
                         SetupCard(title = "📡 步骤 2：板卡握手 (UDP)", subtitle = "BOARD INITIALIZATION") {
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                // 【核心修复】：直接绑定 viewModel.boardName，网络更新后 UI 会瞬间自动刷新
-                                DarkTextField(
-                                    label = "BOARD NAME",
-                                    value = viewModel.boardName,
-                                    onValueChange = {
-                                        viewModel.boardName = it
-                                        config.boardName = it
-                                    },
-                                    modifier = Modifier.weight(1.5f)
-                                )
-                                DarkTextField(
-                                    "UDP PORT",
-                                    udpPort,
-                                    { udpPort = it; it.toIntOrNull()?.let { v -> config.udpPort = v } },
-                                    Modifier.weight(1f)
-                                )
+                                DarkTextField("BOARD NAME", viewModel.boardName, { viewModel.boardName = it; config.boardName = it }, Modifier.weight(1.5f))
+                                DarkTextField("UDP PORT", udpPort, { udpPort = it; it.toIntOrNull()?.let { v -> config.udpPort = v } }, Modifier.weight(1f))
                             }
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(
                                 onClick = { viewModel.openBoard() },
                                 enabled = viewModel.isTcpConnected,
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (viewModel.isBoardOpened) Color(
-                                        0xFF10B981
-                                    ) else Color(0xFF2B3648), disabledContainerColor = BgDark
-                                )
-                            ) {
-                                Text(
-                                    if (viewModel.isBoardOpened) "✓ 板卡已就绪" else "2. 获取板卡信息并打开",
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (viewModel.isTcpConnected) TextWhite else TextMuted
-                                )
-                            }
+                                colors = ButtonDefaults.buttonColors(containerColor = if (viewModel.isBoardOpened) Color(0xFF10B981) else Color(0xFF2B3648), disabledContainerColor = BgDark)
+                            ) { Text(if (viewModel.isBoardOpened) "✓ 板卡已就绪" else "2. 获取板卡信息并打开", fontWeight = FontWeight.Bold, color = if (viewModel.isTcpConnected) TextWhite else TextMuted) }
                         }
 
                         SetupCard(title = "☷ 步骤 3：扫描与光学参数", subtitle = "PARAMETERS & OPTICS") {
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                DarkTextField(
-                                    "START WAVE",
-                                    startWave,
-                                    {
-                                        startWave = it; it.toFloatOrNull()
-                                        ?.let { v -> config.params.startWave = v }; viewModel.isConfigApplied = false
-                                    },
-                                    Modifier.weight(1f)
-                                )
-                                DarkTextField(
-                                    "STOP WAVE",
-                                    stopWave,
-                                    {
-                                        stopWave = it; it.toFloatOrNull()
-                                        ?.let { v -> config.params.stopWave = v }; viewModel.isConfigApplied = false
-                                    },
-                                    Modifier.weight(1f)
-                                )
+                                DarkTextField("START WAVE", startWave, { startWave = it; it.toFloatOrNull()?.let { v -> config.params.startWave = v }; viewModel.isConfigApplied = false }, Modifier.weight(1f))
+                                DarkTextField("STOP WAVE", stopWave, { stopWave = it; it.toFloatOrNull()?.let { v -> config.params.stopWave = v }; viewModel.isConfigApplied = false }, Modifier.weight(1f))
                             }
                             Spacer(modifier = Modifier.height(16.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                DarkTextField(
-                                    "NUM SCANS (累加次数)",
-                                    numScans,
-                                    {
-                                        numScans = it; it.toIntOrNull()
-                                        ?.let { v -> config.params.numScans = v }; viewModel.isConfigApplied = false
-                                    },
-                                    Modifier.weight(1f)
-                                )
-                                DarkTextField(
-                                    "NUM RUNS",
-                                    numRuns,
-                                    {
-                                        numRuns = it; it.toIntOrNull()
-                                        ?.let { v -> config.params.numRuns = v }; viewModel.isConfigApplied = false
-                                    },
-                                    Modifier.weight(1f)
-                                )
+                                DarkTextField("NUM SCANS (累加次数)", numScans, { numScans = it; it.toIntOrNull()?.let { v -> config.params.numScans = v }; viewModel.isConfigApplied = false }, Modifier.weight(1f))
+                                DarkTextField("NUM RUNS", numRuns, { numRuns = it; it.toIntOrNull()?.let { v -> config.params.numRuns = v }; viewModel.isConfigApplied = false }, Modifier.weight(1f))
+                                DarkTextField("LASER FREQ", laserFreq, { laserFreq = it; it.toDoubleOrNull()?.let { v -> config.laserFreq = v }; viewModel.isConfigApplied = false }, Modifier.weight(1f))
                             }
                             Spacer(modifier = Modifier.height(16.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                DarkDropdownField(
-                                    "RESOLUTION (分辨率)",
-                                    resolution,
-                                    resolutionOptions,
-                                    {
-                                        resolution = it; config.params.resolution = it; viewModel.isConfigApplied =
-                                        false
-                                    },
-                                    Modifier.weight(1f)
-                                )
-                                DarkDropdownField(
-                                    "GAIN (增益)",
-                                    firstGain,
-                                    gainOptions,
-                                    { firstGain = it; config.params.firstGain = it; viewModel.isConfigApplied = false },
-                                    Modifier.weight(1f)
-                                )
+                                // 【调用专属日志】：记录交互动作
+                                DarkDropdownField("RESOLUTION (分辨率)", resolution, resolutionOptions, { resolution = it; config.params.resolution = it; viewModel.markConfigDirty("Resolution Code", it.toString()) }, Modifier.weight(1f))
+                                DarkDropdownField("GAIN (增益)", firstGain, gainOptions, { firstGain = it; config.params.firstGain = it; viewModel.markConfigDirty("Hardware Gain", it.toString()) }, Modifier.weight(1f))
                             }
 
                             Spacer(modifier = Modifier.height(16.dp))
@@ -255,16 +151,10 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                                 onClick = { viewModel.applyParameters() },
                                 enabled = viewModel.isBoardOpened,
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (viewModel.isConfigApplied) Color(
-                                        0xFF10B981
-                                    ) else WarningOrange, disabledContainerColor = BgDark
-                                )
+                                colors = ButtonDefaults.buttonColors(containerColor = if (viewModel.isConfigApplied) Color(0xFF10B981) else WarningOrange, disabledContainerColor = BgDark)
                             ) {
-                                val btnText =
-                                    if (viewModel.isConfigApplied) "✓ 参数已下发就绪" else "3. 下发参数至硬件并预热"
-                                val txtColor =
-                                    if (viewModel.isConfigApplied) TextWhite else if (viewModel.isBoardOpened) BgDark else TextMuted
+                                val btnText = if (viewModel.isConfigApplied) "✓ 参数已下发就绪" else "3. 下发参数至硬件并预热"
+                                val txtColor = if (viewModel.isConfigApplied) TextWhite else if (viewModel.isBoardOpened) BgDark else TextMuted
                                 Text(btnText, fontWeight = FontWeight.Bold, color = txtColor)
                             }
                         }
@@ -295,17 +185,8 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    "HARDWARE SENSORS",
-                                    color = TextMuted,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Text("HARDWARE SENSORS", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                                 Button(
                                     onClick = { viewModel.checkHealth() },
                                     modifier = Modifier.height(28.dp),
@@ -317,10 +198,7 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
 
                             val report = viewModel.healthReport
 
-                            Column(
-                                modifier = Modifier.fillMaxWidth().border(1.dp, BorderDark, RoundedCornerShape(4.dp))
-                                    .padding(8.dp)
-                            ) {
+                            Column(modifier = Modifier.fillMaxWidth().border(1.dp, BorderDark, RoundedCornerShape(4.dp)).padding(8.dp)) {
                                 fixedHealthGroups.forEachIndexed { index, groupName ->
                                     val groupData = report?.get(groupName) as? Map<*, *>
                                     val isHealthy = groupData?.get("isHealthy") as? Boolean
@@ -337,30 +215,13 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                                         else -> "ERR:$stateCode"
                                     }
 
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 4.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
+                                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Box(
-                                                modifier = Modifier.size(8.dp)
-                                                    .background(statusColor, RoundedCornerShape(50))
-                                            )
+                                            Box(modifier = Modifier.size(8.dp).background(statusColor, RoundedCornerShape(50)))
                                             Spacer(modifier = Modifier.width(10.dp))
-                                            Text(
-                                                groupName,
-                                                color = TextWhite,
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
+                                            Text(groupName, color = TextWhite, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                         }
-                                        Text(
-                                            statusText,
-                                            color = statusColor,
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.ExtraBold
-                                        )
+                                        Text(statusText, color = statusColor, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
                                     }
                                     if (index < fixedHealthGroups.size - 1) {
                                         HorizontalDivider(color = BorderDark, thickness = 0.5.dp)
@@ -370,23 +231,14 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                         }
 
                         SetupCard(title = "📁 存储与自动化", subtitle = "STORAGE") {
-                            Text(
-                                "DEFAULT EXPORT PATH (默认导出路径)",
-                                color = TextMuted,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Text("DEFAULT EXPORT PATH (默认导出路径)", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.height(4.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                DarkTextField(
-                                    "",
-                                    savePath,
-                                    { savePath = it; config.savePath = it; config.savePathWindows = it },
-                                    Modifier.weight(1f)
-                                )
+                                DarkTextField("", savePath, { savePath = it; config.savePath = it; config.savePathWindows = it }, Modifier.weight(1f))
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Button(
                                     onClick = {
+                                        viewModel.logUserAction("Opened Directory Chooser for Default Export Path")
                                         val chooser = JFileChooser(savePath).apply {
                                             fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
                                             dialogTitle = "选择光谱默认导出目录"
@@ -394,9 +246,7 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                                         if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
                                             val path = chooser.selectedFile.absolutePath + File.separator
                                             savePath = path
-                                            config.savePath = path
-                                            config.savePathWindows = path
-                                            viewModel.uiMessage = "✅ 存储路径已更新"
+                                            viewModel.setExportPathOpt(path) // 调用统一日志与状态方法
                                         }
                                     },
                                     shape = RoundedCornerShape(4.dp),
@@ -407,34 +257,18 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                             }
 
                             Spacer(modifier = Modifier.height(16.dp))
-                            DarkTextField(
-                                "ACQUISITION TIMEOUT (超时 ms)",
-                                timeoutMs,
-                                { timeoutMs = it; it.toLongOrNull()?.let { v -> config.autoCollect.timeoutMs = v } },
-                                Modifier.fillMaxWidth()
-                            )
+                            DarkTextField("ACQUISITION TIMEOUT (超时 ms)", timeoutMs, { timeoutMs = it; it.toLongOrNull()?.let { v -> config.autoCollect.timeoutMs = v } }, Modifier.fillMaxWidth())
 
                             Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                "DEFAULT DATA FORMAT",
-                                color = TextMuted,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Text("DEFAULT DATA FORMAT", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 FormatButton("TXT", "文本格式", viewModel.exportFormat == "TXT", Modifier.weight(1f)) {
-                                    if (viewModel.exportFormat != "TXT") {
-                                        viewModel.exportFormat = "TXT"
-                                        viewModel.uiMessage = "✅ 导出格式已切换为 TXT"
-                                    }
+                                    viewModel.setExportFormatOpt("TXT") // 记录格式切换
                                 }
                                 FormatButton("SPC", "专业格式", viewModel.exportFormat == "SPC", Modifier.weight(1f)) {
-                                    if (viewModel.exportFormat != "SPC") {
-                                        viewModel.exportFormat = "SPC"
-                                        viewModel.uiMessage = "✅ 导出格式已切换为 SPC"
-                                    }
+                                    viewModel.setExportFormatOpt("SPC") // 记录格式切换
                                 }
                             }
                         }
@@ -443,22 +277,14 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
             }
         }
 
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp)
-        ) { data ->
-            Snackbar(
-                snackbarData = data,
-                containerColor = Color(0xFF1E2D4A),
-                contentColor = TextWhite,
-                shape = RoundedCornerShape(8.dp)
-            )
+        SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp)) { data ->
+            Snackbar(snackbarData = data, containerColor = Color(0xFF1E2D4A), contentColor = TextWhite, shape = RoundedCornerShape(8.dp))
         }
     }
 }
 
 // -------------------------------------------------------------------------
-// 核心自定义组件区
+// 核心自定义组件区保持不变
 // -------------------------------------------------------------------------
 
 @Composable
@@ -484,8 +310,7 @@ fun SetupCard(title: String, subtitle: String, content: @Composable () -> Unit) 
 @Composable
 fun ConnectionPipelineBanner(isTcpOk: Boolean, isBoardOk: Boolean, isConfigOk: Boolean) {
     Row(
-        modifier = Modifier.fillMaxWidth().background(PanelBg, RoundedCornerShape(8.dp))
-            .border(1.dp, BorderDark, RoundedCornerShape(8.dp)).padding(16.dp),
+        modifier = Modifier.fillMaxWidth().background(PanelBg, RoundedCornerShape(8.dp)).border(1.dp, BorderDark, RoundedCornerShape(8.dp)).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
@@ -500,17 +325,9 @@ fun ConnectionPipelineBanner(isTcpOk: Boolean, isBoardOk: Boolean, isConfigOk: B
 @Composable
 fun StatusStep(step: String, isActive: Boolean) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier.size(12.dp)
-                .background(if (isActive) Color(0xFF10B981) else Color(0xFF334155), RoundedCornerShape(50))
-        )
+        Box(modifier = Modifier.size(12.dp).background(if (isActive) Color(0xFF10B981) else Color(0xFF334155), RoundedCornerShape(50)))
         Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = step,
-            color = if (isActive) TextWhite else TextMuted,
-            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
-            fontSize = 14.sp
-        )
+        Text(text = step, color = if (isActive) TextWhite else TextMuted, fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal, fontSize = 14.sp)
     }
 }
 
@@ -523,13 +340,7 @@ fun InfoRow(label: String, value: String) {
 }
 
 @Composable
-private fun FormatButton(
-    title: String,
-    subtitle: String,
-    isSelected: Boolean,
-    modifier: Modifier,
-    onClick: () -> Unit
-) {
+private fun FormatButton(title: String, subtitle: String, isSelected: Boolean, modifier: Modifier, onClick: () -> Unit) {
     Box(
         modifier = modifier
             .height(40.dp)
@@ -572,12 +383,7 @@ fun DarkDropdownField(
                 modifier = Modifier.fillMaxWidth(),
                 textStyle = LocalTextStyle.current.copy(fontSize = 12.sp),
                 trailingIcon = {
-                    Text(
-                        "▾",
-                        color = if (expanded) AccentCyan else TextMuted,
-                        fontSize = 16.sp,
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
+                    Text("▾", color = if (expanded) AccentCyan else TextMuted, fontSize = 16.sp, modifier = Modifier.padding(end = 8.dp))
                 },
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = BorderDark,
@@ -604,19 +410,10 @@ fun DarkDropdownField(
                 options.forEach { option ->
                     DropdownMenuItem(
                         text = {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Text(option.first, color = TextWhite, fontSize = 12.sp)
                                 Spacer(modifier = Modifier.width(32.dp))
-                                Text(
-                                    "${option.second}",
-                                    color = AccentCyan,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.ExtraBold
-                                )
+                                Text("${option.second}", color = AccentCyan, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
                             }
                         },
                         onClick = {

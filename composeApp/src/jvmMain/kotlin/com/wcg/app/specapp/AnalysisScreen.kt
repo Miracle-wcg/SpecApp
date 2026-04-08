@@ -37,37 +37,25 @@ fun AnalysisScreen(viewModel: SpectrometerViewModel) {
         HeaderAndActions(viewModel)
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 折线图占据核心主区域
         ChartSection(viewModel, modifier = Modifier.weight(1f).fillMaxWidth())
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 仪器实时配置单行面板
         InstrumentConfigSingleLinePanel(viewModel)
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 固定在最底部的采集进度条面板
         AcquisitionProgressBar(viewModel)
     }
 }
 
 @Composable
 private fun HeaderAndActions(viewModel: SpectrometerViewModel) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Column {
             Row(verticalAlignment = Alignment.Bottom) {
                 Text("光谱控制中心 ", color = TextWhite, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                Text(
-                    "Spectral Analysis",
-                    color = AccentCyan,
-                    fontSize = 18.sp,
-                    modifier = Modifier.padding(bottom = 2.dp)
-                )
+                Text("Spectral Analysis", color = AccentCyan, fontSize = 18.sp, modifier = Modifier.padding(bottom = 2.dp))
             }
 
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
@@ -75,23 +63,13 @@ private fun HeaderAndActions(viewModel: SpectrometerViewModel) {
                 val statusColor = if (isReady) Color(0xFF10B981) else WarningOrange
                 Box(modifier = Modifier.size(8.dp).background(statusColor, RoundedCornerShape(50)))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    if (isReady) "设备已连接就绪 (ONLINE)" else "设备未连接 (OFFLINE)",
-                    color = statusColor,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Text(if (isReady) "设备已连接就绪 (ONLINE)" else "设备未连接 (OFFLINE)", color = statusColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
 
                 if (viewModel.isTcpConnected || viewModel.isBoardOpened) {
                     Spacer(modifier = Modifier.width(16.dp))
                     Box(modifier = Modifier.width(1.dp).height(12.dp).background(BorderDark))
                     Spacer(modifier = Modifier.width(16.dp))
-                    Text(
-                        "断开连接 DISCONNECT",
-                        color = DangerRed,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.clickable { viewModel.disconnectHardware() })
+                    Text("断开连接 DISCONNECT", color = DangerRed, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { viewModel.disconnectHardware() })
                 }
             }
         }
@@ -131,13 +109,7 @@ private fun AcquisitionProgressBar(viewModel: SpectrometerViewModel) {
         val statusText = if (viewModel.isAcquiring) "ACQUIRING (采集中)" else "READY (待机就绪)"
         val statusColor = if (viewModel.isAcquiring) AccentCyan else TextMuted
 
-        Text(
-            statusText,
-            color = statusColor,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.width(160.dp)
-        )
+        Text(statusText, color = statusColor, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(160.dp))
 
         LinearProgressIndicator(
             progress = { animatedProgress },
@@ -145,13 +117,7 @@ private fun AcquisitionProgressBar(viewModel: SpectrometerViewModel) {
             color = AccentCyan, trackColor = BgDark
         )
 
-        Text(
-            "${(animatedProgress * 100).toInt()}%",
-            color = statusColor,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.ExtraBold,
-            modifier = Modifier.width(40.dp)
-        )
+        Text("${(animatedProgress * 100).toInt()}%", color = statusColor, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.width(40.dp))
     }
 }
 
@@ -168,8 +134,7 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
     var offsetY by remember { mutableStateOf(0f) }
 
     BoxWithConstraints(
-        modifier = modifier.clip(RoundedCornerShape(8.dp)).background(PanelBg)
-            .border(1.dp, BorderDark, RoundedCornerShape(8.dp))
+        modifier = modifier.clip(RoundedCornerShape(8.dp)).background(PanelBg).border(1.dp, BorderDark, RoundedCornerShape(8.dp))
     ) {
         val widthPx = constraints.maxWidth.toFloat()
         val heightPx = constraints.maxHeight.toFloat()
@@ -187,7 +152,6 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
             offsetY = offsetY.coerceIn(-(scaleY - 1) * chartHeight, 0f)
         }
 
-        // --- Z轴底层：Canvas 画布 ---
         Canvas(
             modifier = Modifier.fillMaxSize()
                 .pointerInput(Unit) {
@@ -228,15 +192,8 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
                                     clampOffsets()
                                     change.consume()
                                 }
-
-                                PointerEventType.Press -> {
-                                    isDragging = true; lastPos = change.position
-                                }
-
-                                PointerEventType.Release -> {
-                                    isDragging = false
-                                }
-
+                                PointerEventType.Press -> { isDragging = true; lastPos = change.position }
+                                PointerEventType.Release -> { isDragging = false }
                                 PointerEventType.Move -> {
                                     hoverX = change.position.x
                                     if (isDragging) {
@@ -246,27 +203,14 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
                                         clampOffsets()
                                     }
                                 }
-
-                                PointerEventType.Exit -> {
-                                    hoverX = null; isDragging = false
-                                }
+                                PointerEventType.Exit -> { hoverX = null; isDragging = false }
                             }
                         }
                     }
                 }
         ) {
-            drawLine(
-                color = BorderDark,
-                start = Offset(paddingStart, paddingTop),
-                end = Offset(paddingStart, paddingTop + chartHeight),
-                strokeWidth = 2f
-            )
-            drawLine(
-                color = BorderDark,
-                start = Offset(paddingStart, paddingTop + chartHeight),
-                end = Offset(paddingStart + chartWidth, paddingTop + chartHeight),
-                strokeWidth = 2f
-            )
+            drawLine(color = BorderDark, start = Offset(paddingStart, paddingTop), end = Offset(paddingStart, paddingTop + chartHeight), strokeWidth = 2f)
+            drawLine(color = BorderDark, start = Offset(paddingStart, paddingTop + chartHeight), end = Offset(paddingStart + chartWidth, paddingTop + chartHeight), strokeWidth = 2f)
 
             if (data.isNotEmpty()) {
                 val minX = data.minOf { it.first }
@@ -293,25 +237,10 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
                     val yPos = paddingTop + chartHeight - (yRatio * chartHeight)
                     val yVal = viewMinY + yRatio * (viewMaxY - viewMinY)
 
-                    drawLine(
-                        color = BorderDark.copy(alpha = 0.4f),
-                        start = Offset(paddingStart, yPos),
-                        end = Offset(paddingStart + chartWidth, yPos),
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f))
-                    )
+                    drawLine(color = BorderDark.copy(alpha = 0.4f), start = Offset(paddingStart, yPos), end = Offset(paddingStart + chartWidth, yPos), pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f)))
 
-                    // Y轴刻度本身保留排版，仍作部分格式化以保证侧边栏整洁
-                    val textLayoutResult = textMeasurer.measure(
-                        String.format("%.5f", yVal),
-                        style = TextStyle(color = TextMuted, fontSize = 10.sp)
-                    )
-                    drawText(
-                        textLayoutResult,
-                        topLeft = Offset(
-                            paddingStart - textLayoutResult.size.width - 15f,
-                            yPos - textLayoutResult.size.height / 2
-                        )
-                    )
+                    val textLayoutResult = textMeasurer.measure(String.format("%.5f", yVal), style = TextStyle(color = TextMuted, fontSize = 10.sp))
+                    drawText(textLayoutResult, topLeft = Offset(paddingStart - textLayoutResult.size.width - 15f, yPos - textLayoutResult.size.height / 2))
                 }
 
                 val xSteps = 8
@@ -320,38 +249,20 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
                     val xPos = paddingStart + xRatio * chartWidth
                     val xVal = viewMaxX - xRatio * (viewMaxX - viewMinX)
 
-                    drawLine(
-                        color = BorderDark.copy(alpha = 0.4f),
-                        start = Offset(xPos, paddingTop),
-                        end = Offset(xPos, paddingTop + chartHeight),
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f))
-                    )
+                    drawLine(color = BorderDark.copy(alpha = 0.4f), start = Offset(xPos, paddingTop), end = Offset(xPos, paddingTop + chartHeight), pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f)))
 
-                    val textLayoutResult = textMeasurer.measure(
-                        String.format("%.0f", xVal),
-                        style = TextStyle(color = TextMuted, fontSize = 10.sp)
-                    )
-                    drawText(
-                        textLayoutResult,
-                        topLeft = Offset(xPos - textLayoutResult.size.width / 2, paddingTop + chartHeight + 10f)
-                    )
+                    val textLayoutResult = textMeasurer.measure(String.format("%.0f", xVal), style = TextStyle(color = TextMuted, fontSize = 10.sp))
+                    drawText(textLayoutResult, topLeft = Offset(xPos - textLayoutResult.size.width / 2, paddingTop + chartHeight + 10f))
                 }
 
-                clipRect(
-                    left = paddingStart,
-                    top = paddingTop,
-                    right = paddingStart + chartWidth,
-                    bottom = paddingTop + chartHeight
-                ) {
+                clipRect(left = paddingStart, top = paddingTop, right = paddingStart + chartWidth, bottom = paddingTop + chartHeight) {
                     val path = Path()
                     var closestPoint: Pair<Offset, Pair<Double, Double>>? = null
                     var minDistance = Float.MAX_VALUE
 
                     data.forEachIndexed { index, point ->
-                        val px =
-                            paddingStart + ((viewMaxX - point.first) / (viewMaxX - viewMinX)).toFloat() * chartWidth
-                        val py =
-                            paddingTop + chartHeight - ((point.second - viewMinY) / (viewMaxY - viewMinY)).toFloat() * chartHeight
+                        val px = paddingStart + ((viewMaxX - point.first) / (viewMaxX - viewMinX)).toFloat() * chartWidth
+                        val py = paddingTop + chartHeight - ((point.second - viewMinY) / (viewMaxY - viewMinY)).toFloat() * chartHeight
 
                         if (index == 0) path.moveTo(px, py) else path.lineTo(px, py)
 
@@ -367,29 +278,13 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
 
                     closestPoint?.let { (cOffset, cPoint) ->
                         if (cOffset.x in paddingStart..(paddingStart + chartWidth) && cOffset.y in paddingTop..(paddingTop + chartHeight)) {
-                            drawLine(
-                                color = WarningOrange,
-                                start = Offset(cOffset.x, paddingTop),
-                                end = Offset(cOffset.x, paddingTop + chartHeight),
-                                strokeWidth = 1.5f,
-                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 8f))
-                            )
-                            drawLine(
-                                color = WarningOrange,
-                                start = Offset(paddingStart, cOffset.y),
-                                end = Offset(paddingStart + chartWidth, cOffset.y),
-                                strokeWidth = 1.5f,
-                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 8f))
-                            )
+                            drawLine(color = WarningOrange, start = Offset(cOffset.x, paddingTop), end = Offset(cOffset.x, paddingTop + chartHeight), strokeWidth = 1.5f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 8f)))
+                            drawLine(color = WarningOrange, start = Offset(paddingStart, cOffset.y), end = Offset(paddingStart + chartWidth, cOffset.y), strokeWidth = 1.5f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 8f)))
                             drawCircle(color = WarningOrange, radius = 4.dp.toPx(), center = cOffset)
 
-                            // 【核心修改】：移除 String.format 限制，直接将完整的 Double 原始数值进行展示
                             val tooltipText = "X: ${cPoint.first}\nY: ${cPoint.second}"
 
-                            val tr = textMeasurer.measure(
-                                tooltipText,
-                                style = TextStyle(color = BgDark, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            )
+                            val tr = textMeasurer.measure(tooltipText, style = TextStyle(color = BgDark, fontSize = 12.sp, fontWeight = FontWeight.Bold))
                             val tw = tr.size.width + 30f
                             val th = tr.size.height + 20f
 
@@ -398,12 +293,7 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
                             if (tLeft + tw > paddingStart + chartWidth) tLeft = cOffset.x - tw - 15f
                             if (tTop < paddingTop) tTop = cOffset.y + 15f
 
-                            drawRoundRect(
-                                color = AccentCyan,
-                                topLeft = Offset(tLeft, tTop),
-                                size = Size(tw, th),
-                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx())
-                            )
+                            drawRoundRect(color = AccentCyan, topLeft = Offset(tLeft, tTop), size = Size(tw, th), cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx()))
                             drawText(tr, topLeft = Offset(tLeft + 15f, tTop + 10f))
                         }
                     }
@@ -412,34 +302,11 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
         }
 
         // --- Z轴上层：UI 控件 ---
+        Text("INTENSITY", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.TopStart).padding(start = 16.dp, top = 12.dp))
+        Text("WAVENUMBER [CM-1]", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp))
+        Text("💡 滚轮: 缩放X轴 | Ctrl+滚轮: 缩放Y轴 | 左键: 拖拽漫游", color = TextMuted.copy(alpha = 0.5f), fontSize = 10.sp, modifier = Modifier.align(Alignment.TopCenter).padding(top = 12.dp))
 
-        Text(
-            "INTENSITY",
-            color = TextMuted,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.align(Alignment.TopStart).padding(start = 16.dp, top = 12.dp)
-        )
-        Text(
-            "WAVENUMBER [CM-1]",
-            color = TextMuted,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp)
-        )
-        Text(
-            "💡 滚轮: 缩放X轴 | Ctrl+滚轮: 缩放Y轴 | 左键: 拖拽漫游",
-            color = TextMuted.copy(alpha = 0.5f),
-            fontSize = 10.sp,
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 12.dp)
-        )
-
-        // Peak 信息面板
-        Column(
-            modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
-                .background(Color(0xFF2A364B).copy(alpha = 0.8f), RoundedCornerShape(4.dp))
-                .border(1.dp, BorderDark, RoundedCornerShape(4.dp)).padding(12.dp)
-        ) {
+        Column(modifier = Modifier.align(Alignment.TopEnd).padding(16.dp).background(Color(0xFF2A364B).copy(alpha = 0.8f), RoundedCornerShape(4.dp)).border(1.dp, BorderDark, RoundedCornerShape(4.dp)).padding(12.dp)) {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.width(110.dp)) {
                 Text("Peak X", color = TextMuted, fontSize = 10.sp)
                 Text(viewModel.peakX, color = WarningOrange, fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -451,13 +318,13 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
             }
         }
 
-        // 重置视图按钮
         if (scaleX > 1f || scaleY > 1f || offsetX != 0f || offsetY != 0f) {
             Box(
                 modifier = Modifier.align(Alignment.TopEnd).padding(top = 16.dp, end = 160.dp)
                     .background(Color(0xFF1E2D4A).copy(alpha = 0.95f), RoundedCornerShape(4.dp))
                     .border(1.dp, AccentCyan, RoundedCornerShape(4.dp))
                     .clickable {
+                        viewModel.logUserAction("Reset Canvas Viewport") // 记录重置视图操作
                         scaleX = 1f
                         scaleY = 1f
                         offsetX = 0f
@@ -481,16 +348,11 @@ private fun InstrumentConfigSingleLinePanel(viewModel: SpectrometerViewModel, mo
     val resMap = listOf("1 cm-1", "2 cm-1", "4 cm-1", "8 cm-1", "16 cm-1", "32 cm-1", "64 cm-1", "128 cm-1")
     val resText = if (resIndex in resMap.indices) resMap[resIndex] else "$resIndex"
 
-    val gainVal = when (config.params.firstGain.toInt()) {
+    val gainVal = when(config.params.firstGain.toInt()) {
         0 -> "28"; 1 -> "56"; 2 -> "112"; 3 -> "225"; 4 -> "450"; 5 -> "900"; 6 -> "1800"; 7 -> "3600"; else -> "Unknown"
     }
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = PanelBg),
-        shape = RoundedCornerShape(8.dp),
-        border = BorderStroke(1.dp, BorderDark)
-    ) {
+    Card(modifier = modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = PanelBg), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, BorderDark)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -499,16 +361,8 @@ private fun InstrumentConfigSingleLinePanel(viewModel: SpectrometerViewModel, mo
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("📡", fontSize = 16.sp)
                 Spacer(modifier = Modifier.width(8.dp))
-                Box(
-                    modifier = Modifier.border(1.dp, BorderDark, RoundedCornerShape(4.dp))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        if (viewModel.isBoardOpened) "READY" else "OFFLINE",
-                        color = if (viewModel.isBoardOpened) AccentCyan else TextMuted,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                Box(modifier = Modifier.border(1.dp, BorderDark, RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp)) {
+                    Text(if (viewModel.isBoardOpened) "READY" else "OFFLINE", color = if (viewModel.isBoardOpened) AccentCyan else TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -516,7 +370,7 @@ private fun InstrumentConfigSingleLinePanel(viewModel: SpectrometerViewModel, mo
             ConfigItemRow("RESOLUTION", resText)
             ConfigItemRow("GAIN", gainVal)
             ConfigItemRow("CO-ADDS", "${viewModel.totalSweeps}")
-            ConfigItemRow("STATUS", if (isAcquiring) "Acquiring" else "Standby", isAcquiring)
+            ConfigItemRow("STATUS", if(isAcquiring) "Acquiring" else "Standby", isAcquiring)
         }
     }
 }
@@ -526,11 +380,7 @@ private fun ConfigItemRow(label: String, value: String, highlight: Boolean = fal
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text("$label:", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.width(6.dp))
-        if (highlight) {
-            Box(
-                modifier = Modifier.size(6.dp).background(WarningOrange, RoundedCornerShape(50))
-            ); Spacer(modifier = Modifier.width(6.dp))
-        }
+        if (highlight) { Box(modifier = Modifier.size(6.dp).background(WarningOrange, RoundedCornerShape(50))); Spacer(modifier = Modifier.width(6.dp)) }
         Text(value, color = if (highlight) WarningOrange else TextWhite, fontSize = 12.sp, fontWeight = FontWeight.Bold)
     }
 }

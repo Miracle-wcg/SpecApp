@@ -46,10 +46,4 @@ public class OSPathUtils {
         // 使用 nio.file.Paths 自动处理路径分隔符
         return Paths.get(baseDir, fileName).toString();
     }
-
-    public static void main(String[] args) {
-        String filePath = getSavePath("test.txt");
-        System.out.println("当前系统: " + System.getProperty("os.name"));
-        System.out.println("预设保存路径: " + filePath);
-    }
 }

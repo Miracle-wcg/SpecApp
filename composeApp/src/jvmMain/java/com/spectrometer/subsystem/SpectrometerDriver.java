@@ -220,7 +220,7 @@ public class SpectrometerDriver {
                 }
             }
         } catch (Exception e) {
-            System.err.println("自动获取板卡名称失败: " + e.getMessage());
+            log.error("自动获取板卡名称失败: " + e.getMessage());
         }
         return "";
     }

@@ -1,9 +1,13 @@
 package com.wcg.app.specapp
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -11,206 +15,209 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.RandomAccessFile
 
 @Composable
-fun SettingsScreen(viewModel: SpectrometerViewModel? = null) {
-    // 1. 动态运行时长
-    var uptimeSeconds by remember { mutableStateOf(0) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(1000)
-            uptimeSeconds++
-        }
-    }
-    val hours = uptimeSeconds / 3600
-    val minutes = (uptimeSeconds % 3600) / 60
-    val seconds = uptimeSeconds % 60
-    val uptimeString = String.format("%02d : %02d : %02d", hours, minutes, seconds)
-
-    // 2. 双向数据绑定：与 ViewModel 的核心采集参数联动
-    var scanCount by remember { mutableStateOf(viewModel?.config?.params?.numScans ?: 16) }
-    var currentFormat by remember { mutableStateOf(viewModel?.exportFormat ?: "SPC") }
-
-    val isConnected = viewModel?.isBoardOpened == true
-    val connectionState = if (isConnected) "在线 (ACTIVE)" else "离线 (OFFLINE)"
-    val connectionColor = if (isConnected) AccentCyan else TextMuted
-
+fun SettingsScreen() {
     Column(modifier = Modifier.fillMaxSize()) {
-        // --- 顶部标题 ---
         Row(verticalAlignment = Alignment.Bottom) {
             Text("系统设置 ", color = TextWhite, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            Text("SETTINGS ", color = TextMuted, fontSize = 18.sp, modifier = Modifier.padding(bottom = 2.dp))
-            Text("SPECTRAL CORE CONTROL CENTER", color = TextMuted, fontSize = 12.sp, modifier = Modifier.padding(bottom = 4.dp, start = 8.dp))
+            Text("/ System Preferences", color = TextMuted, fontSize = 18.sp, modifier = Modifier.padding(bottom = 2.dp))
         }
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        // --- 主体分栏 ---
-        Row(modifier = Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(32.dp)) {
+        Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+            // 左侧：仅保留运行状态与监控
+            SystemStatusPanel(modifier = Modifier.weight(1f))
 
-            // ================= 左侧栏 =================
-            Column(modifier = Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+            // 右侧：新增的系统执行日志模块
+            SystemLogPanel(modifier = Modifier.weight(2f))
+        }
+    }
+}
 
-                // 1. 账户信息
-                SetupCard(title = "👤  账户信息", subtitle = "CURRENT LOGIN", modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Box(
-                            modifier = Modifier.size(100.dp).background(Color(0xFF86B3D1).copy(alpha = 0.15f), RoundedCornerShape(50.dp)),
-                            contentAlignment = Alignment.Center
-                        ) { Text("👨‍💼", fontSize = 50.sp) }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text("System Operator", color = TextWhite, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        Text("UID: SPC-8842-X", color = TextMuted, fontSize = 13.sp)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Badge("AUTHORIZED", Color(0xFF1E3A8A))
-                            Badge("LEVEL 4", WarningOrange.copy(alpha = 0.2f), WarningOrange)
-                        }
-                    }
+@Composable
+private fun SystemStatusPanel(modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.fillMaxHeight(),
+        colors = CardDefaults.cardColors(containerColor = PanelBg),
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, BorderDark)
+    ) {
+        Column(modifier = Modifier.padding(20.dp).fillMaxSize()) {
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text("🖥️ 运行状态与监控", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("SYSTEM STATUS", color = TextMuted, fontSize = 10.sp, modifier = Modifier.padding(bottom = 2.dp))
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // 模拟系统全局状态
+            ConfigRow("Application Version", "v1.0.4-Beta", true)
+            HorizontalDivider(color = BorderDark, thickness = 1.dp, modifier = Modifier.padding(vertical = 12.dp))
+            ConfigRow("JVM Environment", System.getProperty("java.version"))
+            HorizontalDivider(color = BorderDark, thickness = 1.dp, modifier = Modifier.padding(vertical = 12.dp))
+            ConfigRow("OS Architecture", System.getProperty("os.name") + " " + System.getProperty("os.arch"))
+            HorizontalDivider(color = BorderDark, thickness = 1.dp, modifier = Modifier.padding(vertical = 12.dp))
+            ConfigRow("Logback Engine", "Active", true)
+            HorizontalDivider(color = BorderDark, thickness = 1.dp, modifier = Modifier.padding(vertical = 12.dp))
+            ConfigRow("Local Storage Path", System.getProperty("user.dir"))
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            Box(
+                modifier = Modifier.fillMaxWidth().background(Color(0xFF1E2D4A), RoundedCornerShape(8.dp)).border(1.dp, BorderDark, RoundedCornerShape(8.dp)).padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("All Systems Operational", color = Color(0xFF10B981), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("Memory Usage: ~124 MB", color = TextMuted, fontSize = 12.sp)
                 }
+            }
+        }
+    }
+}
 
-                // 2. 核心信息
-                SetupCard(title = "ℹ️  基础信息", subtitle = "CORE INFO") {
-                    StatRow(icon = "🏷", label = "系统核心版本", value = "v2.4.0-STABLE", valueColor = TextMuted)
-                    HorizontalDivider(color = BorderDark, modifier = Modifier.padding(vertical = 16.dp))
-                    StatRow(icon = "🔑", label = "授权许可类型", value = "ENTERPRISE-882", valueColor = TextMuted)
+@Composable
+private fun ConfigRow(label: String, value: String, isHighlight: Boolean = false) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Text(label, color = TextMuted, fontSize = 14.sp)
+        Text(value, color = if (isHighlight) AccentCyan else TextWhite, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun SystemLogPanel(modifier: Modifier = Modifier) {
+    val listState = rememberLazyListState()
+    val logLines = remember { mutableStateListOf<String>() }
+
+    // 假设 logback.xml 将日志输出到了工作目录下的 logs/specapp.log
+    // 这里使用 user.dir 来定位。如果你的 logback 配置了其他路径，请修改此处的 File 路径
+    val logFile = File(System.getProperty("user.dir"), "logs/specapp.log")
+
+    // 后台协程：类似于 tail -f 实时读取日志文件
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            // 如果文件不存在，先给个提示
+            if (!logFile.exists()) {
+                withContext(Dispatchers.Main) {
+                    logLines.add("[SYSTEM] Waiting for log file at: ${logFile.absolutePath}")
                 }
             }
 
-            // ================= 右侧栏 =================
-            Column(modifier = Modifier.weight(1.2f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+            var lastPointer = 0L
+            while (true) {
+                if (logFile.exists()) {
+                    try {
+                        val fileLength = logFile.length()
+                        if (fileLength > lastPointer) {
+                            val raf = RandomAccessFile(logFile, "r")
+                            raf.seek(lastPointer)
+                            var line: String?
+                            val newLines = mutableListOf<String>()
 
-                // 3. 运行状态
-                SetupCard(title = "📊  运行状态与监控", subtitle = "RUNTIME STATUS") {
-                    StatRow(icon = "⏱", label = "软件运行时长", value = uptimeString, valueColor = AccentCyan)
-                    HorizontalDivider(color = BorderDark, modifier = Modifier.padding(vertical = 16.dp))
-                    StatRow(icon = "📡", label = "底层硬件连接", value = connectionState, valueColor = connectionColor)
-                }
+                            while (raf.readLine().also { line = it } != null) {
+                                // 处理中文等 UTF-8 编码可能导致的乱码问题
+                                val utf8Line = String(line!!.toByteArray(Charsets.ISO_8859_1), Charsets.UTF_8)
+                                newLines.add(utf8Line)
+                            }
+                            lastPointer = raf.filePointer
+                            raf.close()
 
-                // 4. 快捷参数设置 (核心联动区)
-                SetupCard(title = "⚙️  快捷参数配置", subtitle = "QUICK CONFIGURATION") {
-
-                    // 联动：采集次数设定
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("🔄", fontSize = 18.sp, modifier = Modifier.padding(end = 12.dp))
-                            Text("单组预设采集次数", color = TextMuted, fontSize = 15.sp)
-                        }
-
-                        // 步进器组件
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            ControlButton("-") {
-                                if (scanCount > 1) {
-                                    scanCount--
-                                    viewModel?.config?.params?.numScans = scanCount
+                            if (newLines.isNotEmpty()) {
+                                withContext(Dispatchers.Main) {
+                                    logLines.addAll(newLines)
+                                    // 保持内存中最多显示最新的 1000 行
+                                    if (logLines.size > 1000) {
+                                        logLines.removeRange(0, logLines.size - 1000)
+                                    }
                                 }
                             }
-                            Text(
-                                text = "$scanCount",
-                                color = TextWhite,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.width(48.dp),
-                                textAlign = TextAlign.Center
-                            )
-                            ControlButton("+") {
-                                scanCount++
-                                viewModel?.config?.params?.numScans = scanCount
-                            }
+                        } else if (fileLength < lastPointer) {
+                            // 文件可能被日志轮转(log rotation)清空或重置了
+                            lastPointer = 0L
                         }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
+                }
+                delay(1000) // 每秒轮询一次文件变化
+            }
+        }
+    }
 
-                    HorizontalDivider(color = BorderDark, modifier = Modifier.padding(vertical = 16.dp))
+    // 自动滚动到最底部
+    LaunchedEffect(logLines.size) {
+        if (logLines.isNotEmpty()) {
+            listState.animateScrollToItem(logLines.size - 1)
+        }
+    }
 
-                    // 联动：导出格式设定
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("💾", fontSize = 18.sp, modifier = Modifier.padding(end = 12.dp))
-                            Text("数据默认导出格式", color = TextMuted, fontSize = 15.sp)
-                        }
+    Card(
+        modifier = modifier.fillMaxHeight(),
+        colors = CardDefaults.cardColors(containerColor = BgDark),
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, BorderDark)
+    ) {
+        Column(modifier = Modifier.padding(16.dp).fillMaxSize()) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text("📄 实时执行日志", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(logFile.absolutePath, color = TextMuted, fontSize = 10.sp, modifier = Modifier.padding(bottom = 2.dp))
+                }
 
-                        // 格式切换组件
-                        Row(
-                            modifier = Modifier
-                                .background(Color(0xFF1E1E1E), RoundedCornerShape(8.dp))
-                                .border(1.dp, BorderDark, RoundedCornerShape(8.dp))
-                                .padding(4.dp)
-                        ) {
-                            FormatToggleBtn("SPC", currentFormat == "SPC") {
-                                currentFormat = "SPC"
-                                viewModel?.exportFormat = "SPC"
+                // 清空控制台按钮 (仅清空 UI，不清空物理文件)
+                Box(
+                    modifier = Modifier.border(1.dp, BorderDark, RoundedCornerShape(4.dp)).clickable { logLines.clear() }.padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text("CLEAR", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 日志输出框
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color(0xFF0F172A)) // 更深的终端背景色
+                    .border(1.dp, BorderDark, RoundedCornerShape(4.dp))
+                    .padding(12.dp)
+            ) {
+                if (logLines.isEmpty()) {
+                    Text("No logs available...", color = TextMuted, fontSize = 12.sp, fontFamily = FontFamily.Monospace)
+                } else {
+                    LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+                        items(logLines) { line ->
+                            // 简单的按日志级别着色
+                            val color = when {
+                                line.contains("ERROR") || line.contains("Exception") -> DangerRed
+                                line.contains("WARN") -> WarningOrange
+                                line.contains("INFO") -> AccentCyan
+                                else -> TextMuted
                             }
-                            FormatToggleBtn("TXT", currentFormat == "TXT") {
-                                currentFormat = "TXT"
-                                viewModel?.exportFormat = "TXT"
-                            }
+                            Text(
+                                text = line,
+                                color = color,
+                                fontSize = 12.sp,
+                                fontFamily = FontFamily.Monospace,
+                                lineHeight = 16.sp
+                            )
                         }
                     }
                 }
             }
         }
-    }
-}
-
-// ================= UI 辅助组件 =================
-
-@Composable
-fun StatRow(icon: String, label: String, value: String, valueColor: Color) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(icon, fontSize = 18.sp, modifier = Modifier.padding(end = 12.dp))
-            Text(label, color = TextMuted, fontSize = 15.sp)
-        }
-        Text(value, color = valueColor, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
-fun ControlButton(text: String, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .size(32.dp)
-            .clip(RoundedCornerShape(6.dp))
-            .background(Color(0xFF2A2A2A))
-            .clickable { onClick() }
-            .border(1.dp, BorderDark, RoundedCornerShape(6.dp)),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text, color = AccentCyan, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
-fun FormatToggleBtn(text: String, isSelected: Boolean, onClick: () -> Unit) {
-    val bgColor = if (isSelected) AccentCyan.copy(alpha = 0.2f) else Color.Transparent
-    val textColor = if (isSelected) AccentCyan else TextMuted
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
-            .background(bgColor)
-            .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 6.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text, color = textColor, fontSize = 14.sp, fontWeight = FontWeight.Bold)
     }
 }
