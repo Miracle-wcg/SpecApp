@@ -28,13 +28,11 @@ class QuantitativeViewModel(private val getAppLanguage: () -> AppLanguage, priva
     var selectedResult by mutableStateOf<PredictionResult?>(null)
 
     fun startProcessing() {
-        // 🌟 细化拦截提示 1：缺少参比背景
         if (refFile == null) {
             showMessage(if (getAppLanguage() == AppLanguage.Chinese) "⚠️ 拒绝执行：请先绑定参比/白板光谱 (Ref)！" else "⚠️ Action Denied: Please bind Reference spectrum first!")
             return
         }
 
-        // 🌟 细化拦截提示 2：缺少样本
         if (sampleFiles.isEmpty()) {
             showMessage(if (getAppLanguage() == AppLanguage.Chinese) "⚠️ 拒绝执行：待处理样本队列为空，请先导入！" else "⚠️ Action Denied: Sample queue is empty, please import!")
             return
@@ -64,10 +62,11 @@ class QuantitativeViewModel(private val getAppLanguage: () -> AppLanguage, priva
         }
     }
 
-    fun clearAll() {
+    // 🌟 核心优化：只清除样本与结果列表，保留参比(Ref)文件不动
+    fun clearSamples() {
         sampleFiles.clear()
         results.clear()
-        refFile = null
+        // refFile = null  // <-- 注释/删除了这一行，保留绑定状态
         selectedResult = null
         processState = ProcessState.IDLE
         progress = 0f

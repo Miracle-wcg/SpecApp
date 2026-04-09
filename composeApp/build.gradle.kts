@@ -49,7 +49,7 @@ compose.desktop {
             )
 
             packageName = "SpectraX"
-            packageVersion = "1.0.0"
+            packageVersion = "1.0.1"
 
             description = "Spec Application"
             vendor = "wcg"

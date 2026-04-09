@@ -82,11 +82,12 @@ fun QuantitativeScreen(appViewModel: SpectrometerViewModel) {
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2B3648))
                         ) { Text(if (lang == AppLanguage.Chinese) "📂 导入 .spc" else "📂 Import", fontSize = 12.sp) }
 
+                        // 🌟 修复点：调用 clearSamples()，修改按钮文案
                         Button(
-                            onClick = { viewModel.clearAll() },
+                            onClick = { viewModel.clearSamples() },
                             modifier = Modifier.weight(1f).height(40.dp), shape = RoundedCornerShape(4.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2B3648), contentColor = DangerRed)
-                        ) { Text(if (lang == AppLanguage.Chinese) "清空" else "Clear", fontSize = 12.sp) }
+                        ) { Text(if (lang == AppLanguage.Chinese) "清空样本" else "Clear Samples", fontSize = 12.sp) }
                     }
                     Spacer(modifier = Modifier.height(24.dp))
 
@@ -99,13 +100,11 @@ fun QuantitativeScreen(appViewModel: SpectrometerViewModel) {
                     }
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // 进度条渲染
                     if (viewModel.processState == ProcessState.PROCESSING) {
                         LinearProgressIndicator(progress = { viewModel.progress }, modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)), color = AccentCyan, trackColor = BgDark)
                         Spacer(modifier = Modifier.height(8.dp))
                     }
 
-                    // 🌟 新增：直观的环境确实预警文字
                     if (viewModel.refFile == null) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("⚠️ ", fontSize = 12.sp)
@@ -120,7 +119,6 @@ fun QuantitativeScreen(appViewModel: SpectrometerViewModel) {
                         Spacer(modifier = Modifier.height(8.dp))
                     }
 
-                    // 🌟 修改：放开按钮禁用限制（只在正在处理中时禁用），以便用户能点击并触发弹窗
                     Button(
                         onClick = { viewModel.startProcessing() },
                         enabled = viewModel.processState != ProcessState.PROCESSING,
@@ -207,7 +205,7 @@ fun QuantitativeScreen(appViewModel: SpectrometerViewModel) {
 }
 
 // =====================================================
-// 🌟 交互式高精度图表 (无修改)
+// 🌟 交互式高精度图表
 // =====================================================
 @Composable
 private fun PrecisionAbsorbanceChart(data: List<Pair<Double, Double>>, lang: AppLanguage, modifier: Modifier = Modifier) {
