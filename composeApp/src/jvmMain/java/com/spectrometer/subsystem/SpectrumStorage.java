@@ -91,7 +91,9 @@ public class SpectrumStorage {
         indexStop = Math.min(data.length - 1, indexStop);
 
         int fnpts = indexStop - indexStart + 1;
-        if (fnpts <= 0) return null;
+        if (fnpts <= 0) {
+            return null;
+        }
 
         double ffirst = (spcStart + indexStart) * realStepWave;
         double flast = (spcStart + indexStop) * realStepWave;
@@ -194,10 +196,14 @@ public class SpectrumStorage {
             String line;
             while ((line = br.readLine()) != null) {
                 line = line.trim();
-                if (line.isEmpty()) continue;
+                if (line.isEmpty()) {
+                    continue;
+                }
 
                 // 遇到 '=' 说明进入了尾部的 Metadata 状态数据区，直接中断解析数据体
-                if (line.contains("=")) break;
+                if (line.contains("=")) {
+                    break;
+                }
 
                 String[] parts = line.split("\\s+");
                 if (parts.length >= 2) {
@@ -265,7 +271,9 @@ public class SpectrumStorage {
         int spcStart = 0;
         if (meta != null && meta.containsKey(INST_SPC_START)) {
             Matcher m = Pattern.compile("(-?\\d+)").matcher(meta.get(INST_SPC_START));
-            if (m.find()) spcStart = Integer.parseInt(m.group(1));
+            if (m.find()) {
+                spcStart = Integer.parseInt(m.group(1));
+            }
         }
         double realStepWave = laserFreq / data.length;
         int indexStart = (int) Math.floor(startWave / realStepWave) - spcStart;
@@ -274,7 +282,9 @@ public class SpectrumStorage {
         indexStop = Math.min(data.length - 1, indexStop);
         int fnpts = indexStop - indexStart + 1;
 
-        if (fnpts <= 0) return new double[2][0];
+        if (fnpts <= 0) {
+            return new double[2][0];
+        }
 
         double[] xArray = new double[fnpts];
         double[] yArray = new double[fnpts];
