@@ -21,6 +21,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.wcg.app.specapp.quantitative.algorithm.ChemometricsEngine
+import com.wcg.app.specapp.utils.NativeDialogUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -42,6 +44,8 @@ fun SettingsScreen(viewModel: SpectrometerViewModel) {
             Column(modifier = Modifier.weight(1.2f), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                 SystemStatusPanel(viewModel, modifier = Modifier.weight(1f))
                 FileNamingPanel(viewModel, modifier = Modifier.weight(1.2f))
+                // Python 引擎配置面板
+                AlgorithmEnginePanel(viewModel)
             }
             // 右侧：日志终端
             SystemLogPanel(viewModel, modifier = Modifier.weight(1.5f))
@@ -327,6 +331,92 @@ private fun SystemLogPanel(viewModel: SpectrometerViewModel, modifier: Modifier 
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun AlgorithmEnginePanel(viewModel: SpectrometerViewModel, modifier: Modifier = Modifier) {
+    val lang = viewModel.appLanguage
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = PanelBg),
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, BorderDark)
+    ) {
+        Column(modifier = Modifier.padding(20.dp).fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                Text(if (lang == AppLanguage.Chinese) "🧠 ONNX 智能推理引擎" else "🧠 ONNX Native Engine", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+
+                Box(modifier = Modifier.clip(RoundedCornerShape(4.dp)).background(AccentCyan).clickable {
+                    try {
+                        ChemometricsEngine.loadModels(viewModel.onnxModelDirectory)
+                        viewModel.uiMessage = if (lang == AppLanguage.Chinese) "✅ ONNX 模型组已成功加载至内存" else "✅ ONNX models loaded into memory"
+                    } catch(e: Exception) {
+                        viewModel.uiMessage = "❌ 加载失败: ${e.message}"
+                    }
+                }.padding(horizontal = 12.dp, vertical = 6.dp)) {
+                    Text(if (lang == AppLanguage.Chinese) "应用并加载" else "Load Models", color = BgDark, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // 🌟 优化点：将 Label 单独提出来，不参与横向排列的对齐干扰
+            Text(
+                text = if (lang == AppLanguage.Chinese) "ONNX 模型库目录 (包含多个 .onnx)" else "ONNX Models Directory",
+                color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // 🌟 将输入框本体与两个按钮放入同一个严格对齐的 Row 中
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = viewModel.onnxModelDirectory,
+                    onValueChange = { viewModel.onnxModelDirectory = it },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f), // 严格限制高度 48dp
+                    textStyle = LocalTextStyle.current.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedBorderColor = BorderDark,
+                        focusedBorderColor = AccentCyan,
+                        unfocusedTextColor = TextWhite,
+                        focusedTextColor = TextWhite,
+                        unfocusedContainerColor = BgDark,
+                        focusedContainerColor = BgDark
+                    ),
+                    shape = RoundedCornerShape(4.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Button(
+                    onClick = {
+                        val path = NativeDialogUtils.pickDirectory(if (lang == AppLanguage.Chinese) "选择 ONNX 模型所在文件夹" else "Choose ONNX Directory", viewModel.onnxModelDirectory)
+                        if (path != null) viewModel.onnxModelDirectory = path
+                    },
+                    shape = RoundedCornerShape(4.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2B3648)),
+                    modifier = Modifier.size(48.dp), // 严格尺寸 48x48
+                    contentPadding = PaddingValues(0.dp)
+                ) { Text("📂", fontSize = 16.sp) }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Button(
+                    onClick = { viewModel.resetOnnxDirectory() },
+                    shape = RoundedCornerShape(4.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2B3648)),
+                    modifier = Modifier.size(48.dp), // 严格尺寸 48x48
+                    contentPadding = PaddingValues(0.dp)
+                ) { Text("⟲", fontSize = 18.sp) }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                if (lang == AppLanguage.Chinese) "⚠️ 提示：系统启动时会自动扫描项目默认 models 目录。如需更改，请指定新目录并点击【应用并加载】。"
+                else "⚠️ Note: Scans default models dir on startup. To change, select new dir and click Apply.",
+                color = WarningOrange, fontSize = 10.sp, lineHeight = 16.sp
+            )
         }
     }
 }

@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.wcg.app.specapp.quantitative.ui.QuantitativeScreen
 import java.io.File
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
@@ -43,7 +44,9 @@ fun App() {
                         AppScreen.Analysis -> AnalysisScreen(viewModel)
                         AppScreen.Setup -> SetupScreen(viewModel)
                         AppScreen.AutoScan -> AutoScanScreen(viewModel)
+                        AppScreen.Quantitative -> QuantitativeScreen(viewModel)
                         AppScreen.Settings -> SettingsScreen(viewModel)
+                        else -> {}
                     }
                 }
             }

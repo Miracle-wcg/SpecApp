@@ -10,6 +10,8 @@ import com.spectrometer.subsystem.SpectrometerDriver
 import com.spectrometer.subsystem.SpectrumStorage
 import com.wcg.app.specapp.business.FileNameGenerator
 import com.wcg.app.specapp.business.SpectrumDataProcessor
+import com.wcg.app.specapp.quantitative.algorithm.ChemometricsEngine
+import com.wcg.app.specapp.quantitative.viewmodel.QuantitativeViewModel
 import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -24,7 +26,7 @@ enum class AppScreen(val titleEn: String, val titleZh: String, val icon: String)
     Analysis("Analysis", "采集分析", "📊"),
     Setup("Setup", "仪器设置", "☷"),
     AutoScan("Auto Scan", "自动采集", "⏳"),
-    Quantitative("Quantitative","智能定量预测", "🔬"),
+    Quantitative("Quantitative","智能分析", "🔬"),
     Settings("Settings", "系统设置", "⚙");
 
     fun title(lang: AppLanguage): String = if (lang == AppLanguage.Chinese) titleZh else titleEn
@@ -32,7 +34,6 @@ enum class AppScreen(val titleEn: String, val titleZh: String, val icon: String)
 
 class SpectrometerViewModel {
     private val log = LoggerFactory.getLogger(SpectrometerViewModel::class.java)
-
     private val scope = CoroutineScope(Dispatchers.Default + Job())
 
     val config = SpectrometerProperties()
@@ -40,7 +41,6 @@ class SpectrometerViewModel {
     private val parser = MetadataParser()
     private val storage = SpectrumStorage()
 
-    // --- 核心 UI 状态 ---
     var appLanguage by mutableStateOf(AppLanguage.English)
     var currentScreen by mutableStateOf(AppScreen.Analysis)
     var connectionState by mutableStateOf(ConnectionState.Disconnected)
@@ -49,10 +49,8 @@ class SpectrometerViewModel {
     var isTcpConnected by mutableStateOf(false)
     var isBoardOpened by mutableStateOf(false)
     var isConfigApplied by mutableStateOf(false)
-
     var uiMessage by mutableStateOf<String?>(null)
 
-    // --- 硬件与身份信息 ---
     var boardName by mutableStateOf(config.boardName)
     var boardInfo by mutableStateOf<AcquisitionDriverClient.BoardInformation?>(null)
     var firmwareVersion by mutableStateOf("N/A")
@@ -61,7 +59,6 @@ class SpectrometerViewModel {
     var healthReport by mutableStateOf<Map<String, Any>?>(null)
     var systemMetadata by mutableStateOf<Map<String, String>?>(null)
 
-    // --- 光谱实时数据状态 ---
     var spectrumData by mutableStateOf<List<Pair<Double, Double>>>(emptyList())
     var currentSweep by mutableStateOf(0)
     var totalSweeps by mutableStateOf(config.params.numScans)
@@ -71,7 +68,6 @@ class SpectrometerViewModel {
 
     var exportFormat by mutableStateOf("SPC")
 
-    // --- 自动化采集专属状态 ---
     var autoScanMode by mutableStateOf(AutoScanMode.Continuous)
     var autoScanCount by mutableStateOf("10")
     var autoScanDurationMin by mutableStateOf("60")
@@ -79,74 +75,86 @@ class SpectrometerViewModel {
     var isAutoSequenceRunning by mutableStateOf(false)
     var autoSequenceCompletedCount by mutableStateOf(0)
 
-    // --- 文件命名模板专属状态 ---
     var fileNameTemplate by mutableStateOf("[操作员]_[批次号]_[时间戳]")
     var operatorName by mutableStateOf("Admin")
     var batchNumber by mutableStateOf("B001")
 
+    // 🌟 新增：将智能分析页面的 ViewModel 提升到顶层管理，防止页面切换时数据丢失！
+    val quantitativeViewModel = QuantitativeViewModel(
+        getAppLanguage = { appLanguage },
+        showMessage = { msg -> uiMessage = msg }
+    )
+
+    // 🌟 项目默认的 ONNX 模型路径
+    val defaultOnnxDirectory = System.getProperty("user.dir") + File.separator + "models"
+    var onnxModelDirectory by mutableStateOf(defaultOnnxDirectory)
+
     init {
         log.info("=== Spectrometer Engine Initialized ===")
+        // 🌟 开箱即用：软件启动时自动尝试加载项目默认目录下的模型
+        try {
+            val dir = File(onnxModelDirectory)
+            if (dir.exists() && dir.isDirectory) {
+                ChemometricsEngine.loadModels(onnxModelDirectory)
+                log.info("Default ONNX models successfully auto-loaded from: $onnxModelDirectory")
+            } else {
+                log.warn("Default models directory not found. Please specify custom path in Settings.")
+            }
+        } catch (e: Exception) {
+            log.error("Failed to auto-load default ONNX models", e)
+        }
+    }
+
+    // 重置模型目录为项目默认
+    fun resetOnnxDirectory() {
+        onnxModelDirectory = defaultOnnxDirectory
+        try {
+            ChemometricsEngine.loadModels(onnxModelDirectory)
+            uiMessage = if (appLanguage == AppLanguage.Chinese) "✅ 已重置为项目默认模型并加载" else "✅ Reset to default project models and loaded"
+        } catch (e: Exception) {
+            uiMessage = if (appLanguage == AppLanguage.Chinese) "⚠️ 默认目录不存在模型" else "⚠️ No models in default directory"
+        }
     }
 
     fun clearMessage() { uiMessage = null }
 
-    // ==========================================
-    // 🌟 解耦层调用：文件生成与数据处理
-    // ==========================================
     fun getGeneratedFileName(): String {
         return FileNameGenerator.generate(fileNameTemplate, operatorName, batchNumber, exportFormat)
     }
 
     fun setExportFormatOpt(newFormat: String) {
         if (exportFormat != newFormat) {
-            log.info("[USER ACTION] Data Export Format switched to: {}", newFormat)
             exportFormat = newFormat
             uiMessage = if (appLanguage == AppLanguage.Chinese) "✅ 导出格式已切换为 $newFormat" else "✅ Export format switched to $newFormat"
         }
     }
 
     fun setExportPathOpt(newPath: String) {
-        log.info("[USER ACTION] Default Storage Path updated to: {}", newPath)
-        config.savePath = newPath
-        config.savePathWindows = newPath
+        config.savePath = newPath; config.savePathWindows = newPath
         uiMessage = if (appLanguage == AppLanguage.Chinese) "✅ 存储路径已更新" else "✅ Storage path updated"
     }
 
-    fun markConfigDirty(paramName: String, value: String) {
-        log.info("[USER ACTION] Configuration Changed -> {} : {}. Hardware resync required.", paramName, value)
-        isConfigApplied = false
-    }
-
+    fun markConfigDirty(paramName: String, value: String) { isConfigApplied = false }
     fun logUserAction(action: String) { log.info("[USER ACTION] {}", action) }
 
     fun importDataFile(filePath: String) {
-        log.info("[USER ACTION] Loading historical spectrum data from: {}", filePath)
         scope.launch(Dispatchers.IO) {
             try {
                 val rawData = storage.readFromFile(filePath)
-
-                // 使用解耦的处理引擎处理数据
                 val processed = SpectrumDataProcessor.process(rawData)
-
                 withContext(Dispatchers.Main) {
                     if (processed != null) {
                         spectrumData = processed.points
                         peakX = processed.peakX
                         peakY = processed.peakY
                         progress = 1f
-                        val fileName = filePath.substringAfterLast(File.separator)
-                        uiMessage = if (appLanguage == AppLanguage.Chinese) "✅ 成功载入文件: $fileName" else "✅ Successfully loaded file: $fileName"
-                        log.info("Data loaded successfully. Points rendered: {}", processed.points.size)
+                        uiMessage = if (appLanguage == AppLanguage.Chinese) "✅ 成功载入文件" else "✅ File loaded"
                     } else {
-                        log.warn("Target file is empty or unsupported format.")
-                        uiMessage = if (appLanguage == AppLanguage.Chinese) "⚠️ 文件格式不支持或内容为空" else "⚠️ Unsupported or empty file"
+                        uiMessage = "⚠️ 文件格式不支持或为空"
                     }
                 }
             } catch (e: Exception) {
-                log.error("Failed to parse historical file.", e)
-                withContext(Dispatchers.Main) {
-                    uiMessage = if (appLanguage == AppLanguage.Chinese) "❌ 文件读取失败: ${e.message}" else "❌ Failed to read file: ${e.message}"
-                }
+                withContext(Dispatchers.Main) { uiMessage = "❌ 读取失败: ${e.message}" }
             }
         }
     }

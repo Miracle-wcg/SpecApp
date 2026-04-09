@@ -31,6 +31,8 @@ kotlin {
             // --- 新增日志框架依赖 ---
             implementation("org.slf4j:slf4j-api:2.0.12")
             implementation("ch.qos.logback:logback-classic:1.5.3")
+            // 添加 ONNX Runtime (支持跨平台 CPU 推理)
+            implementation("com.microsoft.onnxruntime:onnxruntime:1.17.1")
         }
     }
 }
