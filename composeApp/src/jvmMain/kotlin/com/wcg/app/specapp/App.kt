@@ -33,9 +33,8 @@ fun App() {
 
             Row(modifier = Modifier.weight(1f)) {
                 Sidebar(
-                    currentScreen = viewModel.currentScreen,
-                    onScreenSelected = { viewModel.currentScreen = it },
-                    modifier = Modifier.width(280.dp).fillMaxHeight() // 稍微加宽以适应中英文
+                    viewModel = viewModel,
+                    modifier = Modifier.width(260.dp).fillMaxHeight()
                 )
                 VerticalDivider(color = BorderDark, thickness = 1.dp)
 
@@ -43,7 +42,8 @@ fun App() {
                     when (viewModel.currentScreen) {
                         AppScreen.Analysis -> AnalysisScreen(viewModel)
                         AppScreen.Setup -> SetupScreen(viewModel)
-                        AppScreen.Settings -> SettingsScreen()
+                        AppScreen.AutoScan -> AutoScanScreen(viewModel)
+                        AppScreen.Settings -> SettingsScreen(viewModel)
                     }
                 }
             }
@@ -53,6 +53,8 @@ fun App() {
 
 @Composable
 fun TopNavBar(viewModel: SpectrometerViewModel) {
+    val lang = viewModel.appLanguage
+
     Row(
         modifier = Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 24.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -62,7 +64,7 @@ fun TopNavBar(viewModel: SpectrometerViewModel) {
 
         Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
             Text(
-                "仪器 / Instruments",
+                if (lang == AppLanguage.Chinese) "仪器" else "Instruments",
                 color = TextWhite,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
@@ -75,8 +77,8 @@ fun TopNavBar(viewModel: SpectrometerViewModel) {
         OutlinedButton(
             onClick = {
                 val chooser = JFileChooser(viewModel.config.savePath).apply {
-                    dialogTitle = "选择历史光谱数据文件 / Choose Spectrum File"
-                    fileFilter = FileNameExtensionFilter("光谱文件 / Spectral Files (*.spc, *.txt)", "spc", "txt")
+                    dialogTitle = if (lang == AppLanguage.Chinese) "选择历史光谱数据文件" else "Choose Spectrum File"
+                    fileFilter = FileNameExtensionFilter(if (lang == AppLanguage.Chinese) "光谱文件 (*.spc, *.txt)" else "Spectral Files (*.spc, *.txt)", "spc", "txt")
                     isAcceptAllFileFilterUsed = false
                 }
                 if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
@@ -89,7 +91,7 @@ fun TopNavBar(viewModel: SpectrometerViewModel) {
             modifier = Modifier.height(36.dp), shape = RoundedCornerShape(4.dp),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = TextWhite), border = BorderStroke(1.dp, BorderDark)
         ) {
-            Text("📂 打开数据 / Open Data", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Text(if (lang == AppLanguage.Chinese) "📂 打开数据" else "📂 Open Data", fontWeight = FontWeight.Bold, fontSize = 12.sp)
         }
 
         Spacer(modifier = Modifier.width(24.dp))
@@ -110,10 +112,13 @@ fun Modifier.drawUnderline(): Modifier = this.drawBehind {
 }
 
 @Composable
-fun Sidebar(currentScreen: AppScreen, onScreenSelected: (AppScreen) -> Unit, modifier: Modifier = Modifier) {
+fun Sidebar(viewModel: SpectrometerViewModel, modifier: Modifier = Modifier) {
+    val lang = viewModel.appLanguage
+    val currentScreen = viewModel.currentScreen
+
     Column(modifier = modifier.background(BgDark).padding(20.dp)) {
-        Text("系统 ALPHA / SYSTEM ALPHA", color = TextWhite, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-        Text("仪器在线 / Instrument Online", color = TextMuted, fontSize = 12.sp)
+        Text(if (lang == AppLanguage.Chinese) "系统 ALPHA" else "SYSTEM ALPHA", color = TextWhite, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        Text(if (lang == AppLanguage.Chinese) "仪器在线" else "Instrument Online", color = TextMuted, fontSize = 12.sp)
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -129,14 +134,14 @@ fun Sidebar(currentScreen: AppScreen, onScreenSelected: (AppScreen) -> Unit, mod
                         if (isSelected) AccentCyan.copy(alpha = 0.3f) else Color.Transparent,
                         RoundedCornerShape(6.dp)
                     )
-                    .clickable { onScreenSelected(screen) }
+                    .clickable { viewModel.currentScreen = screen }
                     .padding(vertical = 12.dp, horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(screen.icon, color = if (isSelected) AccentCyan else TextMuted, fontSize = 16.sp)
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    screen.title,
+                    screen.title(lang),
                     color = if (isSelected) TextWhite else TextMuted,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 14.sp

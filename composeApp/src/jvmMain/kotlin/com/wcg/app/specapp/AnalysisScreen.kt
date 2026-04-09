@@ -36,26 +36,21 @@ fun AnalysisScreen(viewModel: SpectrometerViewModel) {
     Column(modifier = Modifier.fillMaxSize()) {
         HeaderAndActions(viewModel)
         Spacer(modifier = Modifier.height(16.dp))
-
         ChartSection(viewModel, modifier = Modifier.weight(1f).fillMaxWidth())
-
         Spacer(modifier = Modifier.height(16.dp))
-
         InstrumentConfigSingleLinePanel(viewModel)
-
         Spacer(modifier = Modifier.height(16.dp))
-
         AcquisitionProgressBar(viewModel)
     }
 }
 
 @Composable
 private fun HeaderAndActions(viewModel: SpectrometerViewModel) {
+    val lang = viewModel.appLanguage
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Column {
             Row(verticalAlignment = Alignment.Bottom) {
-                Text("光谱控制中心 ", color = TextWhite, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                Text("/ Spectral Analysis", color = AccentCyan, fontSize = 18.sp, modifier = Modifier.padding(bottom = 2.dp))
+                Text(if (lang == AppLanguage.Chinese) "光谱控制中心" else "Spectral Analysis", color = TextWhite, fontSize = 24.sp, fontWeight = FontWeight.Bold)
             }
 
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
@@ -63,13 +58,19 @@ private fun HeaderAndActions(viewModel: SpectrometerViewModel) {
                 val statusColor = if (isReady) Color(0xFF10B981) else WarningOrange
                 Box(modifier = Modifier.size(8.dp).background(statusColor, RoundedCornerShape(50)))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text(if (isReady) "设备已连接就绪 / ONLINE" else "设备未连接 / OFFLINE", color = statusColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+
+                val statusText = if (isReady) {
+                    if (lang == AppLanguage.Chinese) "设备已连接就绪" else "ONLINE"
+                } else {
+                    if (lang == AppLanguage.Chinese) "设备未连接" else "OFFLINE"
+                }
+                Text(statusText, color = statusColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
 
                 if (viewModel.isTcpConnected || viewModel.isBoardOpened) {
                     Spacer(modifier = Modifier.width(16.dp))
                     Box(modifier = Modifier.width(1.dp).height(12.dp).background(BorderDark))
                     Spacer(modifier = Modifier.width(16.dp))
-                    Text("断开连接 / DISCONNECT", color = DangerRed, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { viewModel.disconnectHardware() })
+                    Text(if (lang == AppLanguage.Chinese) "断开连接" else "DISCONNECT", color = DangerRed, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { viewModel.disconnectHardware() })
                 }
             }
         }
@@ -77,21 +78,22 @@ private fun HeaderAndActions(viewModel: SpectrometerViewModel) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Button(
                 onClick = { viewModel.stopAcquisition() },
-                modifier = Modifier.height(44.dp).width(220.dp), shape = RoundedCornerShape(4.dp),
+                modifier = Modifier.height(44.dp).width(if (lang == AppLanguage.Chinese) 120.dp else 140.dp), shape = RoundedCornerShape(4.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = DangerRed, contentColor = TextWhite)
-            ) { Text("🛑 停止 / STOP", fontWeight = FontWeight.Bold) }
+            ) { Text(if (lang == AppLanguage.Chinese) "🛑 停止" else "🛑 STOP", fontWeight = FontWeight.Bold) }
 
             Button(
                 onClick = { viewModel.startAcquisition() },
-                modifier = Modifier.height(44.dp).width(220.dp), shape = RoundedCornerShape(4.dp),
+                modifier = Modifier.height(44.dp).width(if (lang == AppLanguage.Chinese) 160.dp else 200.dp), shape = RoundedCornerShape(4.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = AccentCyan, contentColor = BgDark)
-            ) { Text("▶ 开始采集 / START", fontWeight = FontWeight.ExtraBold) }
+            ) { Text(if (lang == AppLanguage.Chinese) "▶ 开始采集" else "▶ START", fontWeight = FontWeight.ExtraBold) }
         }
     }
 }
 
 @Composable
 private fun AcquisitionProgressBar(viewModel: SpectrometerViewModel) {
+    val lang = viewModel.appLanguage
     val animatedProgress by animateFloatAsState(
         targetValue = viewModel.progress,
         animationSpec = tween(durationMillis = 300, easing = LinearEasing)
@@ -106,10 +108,14 @@ private fun AcquisitionProgressBar(viewModel: SpectrometerViewModel) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        val statusText = if (viewModel.isAcquiring) "采集中 / ACQUIRING" else "待机就绪 / READY"
+        val statusText = if (viewModel.isAcquiring) {
+            if (lang == AppLanguage.Chinese) "采集中" else "ACQUIRING"
+        } else {
+            if (lang == AppLanguage.Chinese) "待机就绪" else "READY"
+        }
         val statusColor = if (viewModel.isAcquiring) AccentCyan else TextMuted
 
-        Text(statusText, color = statusColor, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(180.dp))
+        Text(statusText, color = statusColor, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(100.dp))
 
         LinearProgressIndicator(
             progress = { animatedProgress },
@@ -123,6 +129,7 @@ private fun AcquisitionProgressBar(viewModel: SpectrometerViewModel) {
 
 @Composable
 private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = Modifier) {
+    val lang = viewModel.appLanguage
     val textMeasurer = rememberTextMeasurer()
     var hoverX by remember { mutableStateOf<Float?>(null) }
     val data = viewModel.spectrumData
@@ -302,18 +309,22 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
         }
 
         // --- Z轴上层：UI 控件 ---
-        Text("强度 / INTENSITY", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.TopStart).padding(start = 16.dp, top = 12.dp))
-        Text("波数 / WAVENUMBER [CM-1]", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp))
-        Text("💡 滚轮/Scroll: 缩放X轴 | Ctrl+滚轮: 缩放Y轴 | 左键/Left Click: 拖拽漫游", color = TextMuted.copy(alpha = 0.5f), fontSize = 10.sp, modifier = Modifier.align(Alignment.TopCenter).padding(top = 12.dp))
+        val yAxisText = if (lang == AppLanguage.Chinese) "强度" else "INTENSITY"
+        val xAxisText = if (lang == AppLanguage.Chinese) "波数 [CM-1]" else "WAVENUMBER [CM-1]"
+        val helperText = if (lang == AppLanguage.Chinese) "💡 滚轮: 缩放X轴 | Ctrl+滚轮: 缩放Y轴 | 左键: 拖拽漫游" else "💡 Scroll: Zoom X | Ctrl+Scroll: Zoom Y | Left Click: Pan"
+
+        Text(yAxisText, color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.TopStart).padding(start = 16.dp, top = 12.dp))
+        Text(xAxisText, color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp))
+        Text(helperText, color = TextMuted.copy(alpha = 0.5f), fontSize = 10.sp, modifier = Modifier.align(Alignment.TopCenter).padding(top = 12.dp))
 
         Column(modifier = Modifier.align(Alignment.TopEnd).padding(16.dp).background(Color(0xFF2A364B).copy(alpha = 0.8f), RoundedCornerShape(4.dp)).border(1.dp, BorderDark, RoundedCornerShape(4.dp)).padding(12.dp)) {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.width(110.dp)) {
-                Text("Peak X", color = TextMuted, fontSize = 10.sp)
+                Text(if (lang == AppLanguage.Chinese) "峰值 X" else "Peak X", color = TextMuted, fontSize = 10.sp)
                 Text(viewModel.peakX, color = WarningOrange, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.height(4.dp))
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.width(110.dp)) {
-                Text("Peak Y", color = TextMuted, fontSize = 10.sp)
+                Text(if (lang == AppLanguage.Chinese) "峰值 Y" else "Peak Y", color = TextMuted, fontSize = 10.sp)
                 Text(viewModel.peakY, color = WarningOrange, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
         }
@@ -324,7 +335,7 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
                     .background(Color(0xFF1E2D4A).copy(alpha = 0.95f), RoundedCornerShape(4.dp))
                     .border(1.dp, AccentCyan, RoundedCornerShape(4.dp))
                     .clickable {
-                        viewModel.logUserAction("Reset Canvas Viewport") // 记录重置视图操作
+                        viewModel.logUserAction("Reset Canvas Viewport")
                         scaleX = 1f
                         scaleY = 1f
                         offsetX = 0f
@@ -333,7 +344,7 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text("⤢ 恢复视图 / Reset View", color = AccentCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Text(if (lang == AppLanguage.Chinese) "⤢ 恢复视图" else "⤢ Reset View", color = AccentCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -341,6 +352,7 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
 
 @Composable
 private fun InstrumentConfigSingleLinePanel(viewModel: SpectrometerViewModel, modifier: Modifier = Modifier) {
+    val lang = viewModel.appLanguage
     val config = viewModel.config
     val isAcquiring = viewModel.isAcquiring
 
@@ -366,11 +378,13 @@ private fun InstrumentConfigSingleLinePanel(viewModel: SpectrometerViewModel, mo
                 }
             }
 
-            ConfigItemRow("波段范围 / WAVE RANGE", "${config.params.startWave} - ${config.params.stopWave}")
-            ConfigItemRow("分辨率 / RESOLUTION", resText)
-            ConfigItemRow("增益 / GAIN", gainVal)
-            ConfigItemRow("累加次数 / CO-ADDS", "${viewModel.totalSweeps}")
-            ConfigItemRow("状态 / STATUS", if(isAcquiring) "采集中 / Acquiring" else "待机中 / Standby", isAcquiring)
+            ConfigItemRow(if (lang == AppLanguage.Chinese) "波段范围" else "WAVE RANGE", "${config.params.startWave} - ${config.params.stopWave}")
+            ConfigItemRow(if (lang == AppLanguage.Chinese) "分辨率" else "RESOLUTION", resText)
+            ConfigItemRow(if (lang == AppLanguage.Chinese) "增益" else "GAIN", gainVal)
+            ConfigItemRow(if (lang == AppLanguage.Chinese) "累加次数" else "CO-ADDS", "${viewModel.totalSweeps}")
+
+            val statusVal = if (isAcquiring) (if (lang == AppLanguage.Chinese) "采集中" else "Acquiring") else (if (lang == AppLanguage.Chinese) "待机" else "Standby")
+            ConfigItemRow(if (lang == AppLanguage.Chinese) "状态" else "STATUS", statusVal, isAcquiring)
         }
     }
 }
