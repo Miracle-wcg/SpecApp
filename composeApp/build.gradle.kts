@@ -59,7 +59,6 @@ compose.desktop {
                 "java.desktop",
                 "java.logging",
                 "java.naming",
-                "java.sql",
                 "java.management"
             )
 
