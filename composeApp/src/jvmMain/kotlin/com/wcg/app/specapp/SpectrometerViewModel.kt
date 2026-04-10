@@ -26,7 +26,7 @@ enum class AppScreen(val titleEn: String, val titleZh: String, val icon: String)
     Analysis("Analysis", "采集分析", "📊"),
     Setup("Setup", "仪器设置", "☷"),
     AutoScan("Auto Scan", "自动采集", "⏳"),
-    Quantitative("Quantitative","智能分析", "🔬"),
+    Quantitative("Quantitative", "智能分析", "🔬"),
     Settings("Settings", "系统设置", "⚙");
 
     fun title(lang: AppLanguage): String = if (lang == AppLanguage.Chinese) titleZh else titleEn
@@ -85,8 +85,35 @@ class SpectrometerViewModel {
         showMessage = { msg -> uiMessage = msg }
     )
 
-    // 🌟 项目默认的 ONNX 模型路径
-    val defaultOnnxDirectory = System.getProperty("user.dir") + File.separator + "models"
+    // ==========================================
+    // 🌟 智能环境感知：ONNX 模型库默认路径
+    // ==========================================
+    val defaultOnnxDirectory = run {
+        val packagedResDir = System.getProperty("compose.application.resources.dir")
+
+        // 🌟 核心修复：拦截 Gradle 在开发期生成的 build/tmp 临时路径
+        val isDevelopmentEnv = packagedResDir == null ||
+                packagedResDir.contains("build") ||
+                packagedResDir.contains("tmp")
+
+        if (!isDevelopmentEnv && packagedResDir != null) {
+            // [生产环境] 用户安装后的真实运行路径 (例如 C:\Program Files\SpectraX\app\resources\models)
+            File(packagedResDir, "models").absolutePath
+        } else {
+            // [开发环境] 强制指向项目源码真实目录，告别冗长的 tmp 路径
+            val userDir = System.getProperty("user.dir")
+            val rootPath = File(userDir, "composeApp/app_resources/models")
+            val subPath = File(userDir, "app_resources/models")
+
+            when {
+                rootPath.exists() -> rootPath.absolutePath
+                subPath.exists() -> subPath.absolutePath
+                // 兜底方案
+                else -> packagedResDir?.let { File(it, "models").absolutePath } ?: rootPath.absolutePath
+            }
+        }
+    }
+
     var onnxModelDirectory by mutableStateOf(defaultOnnxDirectory)
 
     init {
@@ -110,13 +137,17 @@ class SpectrometerViewModel {
         onnxModelDirectory = defaultOnnxDirectory
         try {
             ChemometricsEngine.loadModels(onnxModelDirectory)
-            uiMessage = if (appLanguage == AppLanguage.Chinese) "✅ 已重置为项目默认模型并加载" else "✅ Reset to default project models and loaded"
+            uiMessage =
+                if (appLanguage == AppLanguage.Chinese) "✅ 已重置为项目默认模型并加载" else "✅ Reset to default project models and loaded"
         } catch (e: Exception) {
-            uiMessage = if (appLanguage == AppLanguage.Chinese) "⚠️ 默认目录不存在模型" else "⚠️ No models in default directory"
+            uiMessage =
+                if (appLanguage == AppLanguage.Chinese) "⚠️ 默认目录不存在模型" else "⚠️ No models in default directory"
         }
     }
 
-    fun clearMessage() { uiMessage = null }
+    fun clearMessage() {
+        uiMessage = null
+    }
 
     fun getGeneratedFileName(): String {
         return FileNameGenerator.generate(fileNameTemplate, operatorName, batchNumber, exportFormat)
@@ -125,7 +156,8 @@ class SpectrometerViewModel {
     fun setExportFormatOpt(newFormat: String) {
         if (exportFormat != newFormat) {
             exportFormat = newFormat
-            uiMessage = if (appLanguage == AppLanguage.Chinese) "✅ 导出格式已切换为 $newFormat" else "✅ Export format switched to $newFormat"
+            uiMessage =
+                if (appLanguage == AppLanguage.Chinese) "✅ 导出格式已切换为 $newFormat" else "✅ Export format switched to $newFormat"
         }
     }
 
@@ -134,8 +166,13 @@ class SpectrometerViewModel {
         uiMessage = if (appLanguage == AppLanguage.Chinese) "✅ 存储路径已更新" else "✅ Storage path updated"
     }
 
-    fun markConfigDirty(paramName: String, value: String) { isConfigApplied = false }
-    fun logUserAction(action: String) { log.info("[USER ACTION] {}", action) }
+    fun markConfigDirty(paramName: String, value: String) {
+        isConfigApplied = false
+    }
+
+    fun logUserAction(action: String) {
+        log.info("[USER ACTION] {}", action)
+    }
 
     fun importDataFile(filePath: String) {
         scope.launch(Dispatchers.IO) {
@@ -181,7 +218,8 @@ class SpectrometerViewModel {
                     instrumentType = "N/A"
                     healthReport = null
                     systemMetadata = null
-                    uiMessage = if (appLanguage == AppLanguage.Chinese) "🔌 设备已安全断开连接" else "🔌 Device safely disconnected"
+                    uiMessage =
+                        if (appLanguage == AppLanguage.Chinese) "🔌 设备已安全断开连接" else "🔌 Device safely disconnected"
                 }
             }
         }
@@ -208,7 +246,8 @@ class SpectrometerViewModel {
                     withContext(Dispatchers.Main) { systemMetadata = meta }
                 }
                 withContext(Dispatchers.Main) {
-                    uiMessage = if (appLanguage == AppLanguage.Chinese) "✅ 硬件健康监控及系统扩展状态已刷新" else "✅ Hardware health and system status refreshed"
+                    uiMessage =
+                        if (appLanguage == AppLanguage.Chinese) "✅ 硬件健康监控及系统扩展状态已刷新" else "✅ Hardware health and system status refreshed"
                 }
                 log.info("Health diagnostics updated successfully.")
             } catch (e: Exception) {
@@ -231,10 +270,12 @@ class SpectrometerViewModel {
                     if (detectedName.isNotEmpty()) {
                         boardName = detectedName
                         config.boardName = detectedName
-                        uiMessage = if (appLanguage == AppLanguage.Chinese) "✅ TCP 已连接，自动识别板卡: $detectedName" else "✅ TCP Connected, auto-detected board: $detectedName"
+                        uiMessage =
+                            if (appLanguage == AppLanguage.Chinese) "✅ TCP 已连接，自动识别板卡: $detectedName" else "✅ TCP Connected, auto-detected board: $detectedName"
                         log.info("Discovered Board Name: [{}]", detectedName)
                     } else {
-                        uiMessage = if (appLanguage == AppLanguage.Chinese) "✅ TCP 基础连接已建立，但未探测到默认板卡名称" else "✅ TCP connected, but default board name not detected"
+                        uiMessage =
+                            if (appLanguage == AppLanguage.Chinese) "✅ TCP 基础连接已建立，但未探测到默认板卡名称" else "✅ TCP connected, but default board name not detected"
                         log.warn("Board name auto-discovery yielded no results.")
                     }
                 }
@@ -243,7 +284,8 @@ class SpectrometerViewModel {
                 withContext(Dispatchers.Main) {
                     isTcpConnected = false
                     connectionState = ConnectionState.Error
-                    uiMessage = if (appLanguage == AppLanguage.Chinese) "❌ TCP 连接失败，请检查 IP 和端口" else "❌ TCP connection failed, check IP and port"
+                    uiMessage =
+                        if (appLanguage == AppLanguage.Chinese) "❌ TCP 连接失败，请检查 IP 和端口" else "❌ TCP connection failed, check IP and port"
                 }
             }
         }
@@ -251,7 +293,11 @@ class SpectrometerViewModel {
 
     fun openBoard() {
         if (!isTcpConnected) return
-        log.info("[USER ACTION] Initializing UDP Board Link -> Board Name: {}, UDP Port: {}", config.boardName, config.udpPort)
+        log.info(
+            "[USER ACTION] Initializing UDP Board Link -> Board Name: {}, UDP Port: {}",
+            config.boardName,
+            config.udpPort
+        )
         scope.launch(Dispatchers.IO) {
             withContext(Dispatchers.Main) { connectionState = ConnectionState.Connecting }
             if (driver.openBoard()) {
@@ -268,7 +314,8 @@ class SpectrometerViewModel {
                     }
                     isBoardOpened = true
                     connectionState = ConnectionState.Ready
-                    uiMessage = if (appLanguage == AppLanguage.Chinese) "✅ 板卡打开成功，已获取硬件信息" else "✅ Board opened successfully, hardware info retrieved"
+                    uiMessage =
+                        if (appLanguage == AppLanguage.Chinese) "✅ 板卡打开成功，已获取硬件信息" else "✅ Board opened successfully, hardware info retrieved"
                     log.info("Hardware identified. Type: {}, Firmware: {}", instrumentType, firmwareVersion)
                 }
                 checkHealth()
@@ -277,7 +324,8 @@ class SpectrometerViewModel {
                 withContext(Dispatchers.Main) {
                     isBoardOpened = false
                     connectionState = ConnectionState.Error
-                    uiMessage = if (appLanguage == AppLanguage.Chinese) "❌ 板卡打开失败，请检查 UDP 端口及板卡名称" else "❌ Board open failed, check UDP port and board name"
+                    uiMessage =
+                        if (appLanguage == AppLanguage.Chinese) "❌ 板卡打开失败，请检查 UDP 端口及板卡名称" else "❌ Board open failed, check UDP port and board name"
                 }
             }
         }
@@ -289,17 +337,25 @@ class SpectrometerViewModel {
         scope.launch(Dispatchers.IO) {
             try {
                 config.params.secondGain = 0
-                driver.configure(config.params.resolution, config.params.firstGain, 0, config.params.startWave, config.params.stopWave)
+                driver.configure(
+                    config.params.resolution,
+                    config.params.firstGain,
+                    0,
+                    config.params.startWave,
+                    config.params.stopWave
+                )
                 withContext(Dispatchers.Main) {
                     isConfigApplied = true
-                    uiMessage = if (appLanguage == AppLanguage.Chinese) "✅ 光学及扫描参数已成功下发至硬件" else "✅ Optics parameters synchronized to hardware"
+                    uiMessage =
+                        if (appLanguage == AppLanguage.Chinese) "✅ 光学及扫描参数已成功下发至硬件" else "✅ Optics parameters synchronized to hardware"
                     log.info("Optics parameters synchronized successfully. Ready for acquisition.")
                 }
             } catch (e: Exception) {
                 log.error("Failed to synchronize optics parameters.", e)
                 withContext(Dispatchers.Main) {
                     isConfigApplied = false
-                    uiMessage = if (appLanguage == AppLanguage.Chinese) "❌ 参数下发失败: ${e.message}" else "❌ Failed to apply parameters: ${e.message}"
+                    uiMessage =
+                        if (appLanguage == AppLanguage.Chinese) "❌ 参数下发失败: ${e.message}" else "❌ Failed to apply parameters: ${e.message}"
                 }
             }
         }
@@ -310,7 +366,8 @@ class SpectrometerViewModel {
     // ==========================================
     fun startAcquisition() {
         if (isAcquiring || !driver.isConnected || !isConfigApplied) {
-            uiMessage = if (appLanguage == AppLanguage.Chinese) "⚠️ 无法启动：设备未就绪或未下发参数" else "⚠️ Cannot start: Device not ready or config not applied"
+            uiMessage =
+                if (appLanguage == AppLanguage.Chinese) "⚠️ 无法启动：设备未就绪或未下发参数" else "⚠️ Cannot start: Device not ready or config not applied"
             return
         }
 
@@ -343,7 +400,13 @@ class SpectrometerViewModel {
                         if (nPts > 0) {
                             val liveData = driver.fetchRawData(SpectrometerDriver.SOURCE_CURRENT, nPts, 500)
                             val liveMeta = parser.parseDynamicMetadata(statusBuf)
-                            val liveXy = storage.getSpectrumDataArray(liveData, liveMeta, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble())
+                            val liveXy = storage.getSpectrumDataArray(
+                                liveData,
+                                liveMeta,
+                                config.laserFreq,
+                                config.params.startWave.toDouble(),
+                                config.params.stopWave.toDouble()
+                            )
 
                             // 依赖处理引擎刷新 UI
                             SpectrumDataProcessor.process(liveXy)?.let { processed ->
@@ -356,7 +419,8 @@ class SpectrometerViewModel {
                                 }
                             }
                         }
-                    } catch (e: Exception) {}
+                    } catch (e: Exception) {
+                    }
 
                     if (System.currentTimeMillis() - t0 > timeout) {
                         throw Exception(if (appLanguage == AppLanguage.Chinese) "扫描执行超时" else "Acquisition timeout limit reached")
@@ -367,32 +431,63 @@ class SpectrometerViewModel {
                 if (!isAcquiring) return@launch
 
                 withContext(Dispatchers.Main) {
-                    uiMessage = if (appLanguage == AppLanguage.Chinese) "⏳ 正在提取硬件底层高精度均值数据..." else "⏳ Extracting high-precision co-added data..."
+                    uiMessage =
+                        if (appLanguage == AppLanguage.Chinese) "⏳ 正在提取硬件底层高精度均值数据..." else "⏳ Extracting high-precision co-added data..."
                 }
 
                 // 2. 最终结果提取与落盘
                 val finalStatusBuf = driver.fetchCurrentStatus()
                 val finalNpts = parser.extractNpts(finalStatusBuf)
-                val finalRawData = driver.fetchRawData(SpectrometerDriver.SOURCE_FIFO, finalNpts, config.autoCollect.timeoutMs)
+                val finalRawData =
+                    driver.fetchRawData(SpectrometerDriver.SOURCE_FIFO, finalNpts, config.autoCollect.timeoutMs)
                 val finalMetadata = parser.parseDynamicMetadata(finalStatusBuf)
 
                 // 🌟 使用动态命名生成器组合绝对路径
                 val actualFileName = getGeneratedFileName()
-                val exportDir = if (config.savePath.endsWith(File.separator)) config.savePath else config.savePath + File.separator
+                val exportDir =
+                    if (config.savePath.endsWith(File.separator)) config.savePath else config.savePath + File.separator
                 val absoluteSavePath = exportDir + actualFileName
 
                 log.info("Saving spectrum data to custom path: {}", absoluteSavePath)
 
                 val savedPath = try {
-                    if (exportFormat == "SPC") storage.saveToSpc(finalRawData, finalMetadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble(), absoluteSavePath)
-                    else storage.saveToTxt(finalRawData, finalMetadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble(), absoluteSavePath)
-                } catch (e: Exception) { null }
+                    if (exportFormat == "SPC") storage.saveToSpc(
+                        finalRawData,
+                        finalMetadata,
+                        config.laserFreq,
+                        config.params.startWave.toDouble(),
+                        config.params.stopWave.toDouble(),
+                        absoluteSavePath
+                    )
+                    else storage.saveToTxt(
+                        finalRawData,
+                        finalMetadata,
+                        config.laserFreq,
+                        config.params.startWave.toDouble(),
+                        config.params.stopWave.toDouble(),
+                        absoluteSavePath
+                    )
+                } catch (e: Exception) {
+                    null
+                }
 
                 val finalXyData = try {
                     if (savedPath != null) storage.readFromFile(savedPath)
-                    else storage.getSpectrumDataArray(finalRawData, finalMetadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble())
+                    else storage.getSpectrumDataArray(
+                        finalRawData,
+                        finalMetadata,
+                        config.laserFreq,
+                        config.params.startWave.toDouble(),
+                        config.params.stopWave.toDouble()
+                    )
                 } catch (e: Exception) {
-                    storage.getSpectrumDataArray(finalRawData, finalMetadata, config.laserFreq, config.params.startWave.toDouble(), config.params.stopWave.toDouble())
+                    storage.getSpectrumDataArray(
+                        finalRawData,
+                        finalMetadata,
+                        config.laserFreq,
+                        config.params.startWave.toDouble(),
+                        config.params.stopWave.toDouble()
+                    )
                 }
 
                 // 🌟 依赖处理引擎完成终极数据展示
@@ -403,13 +498,15 @@ class SpectrometerViewModel {
                         peakY = processed.peakY
                         currentSweep = totalSweeps
                         progress = 1f
-                        uiMessage = if (appLanguage == AppLanguage.Chinese) "🎉 采集完成！保存至: $actualFileName" else "🎉 Scan completed! Saved: $actualFileName"
+                        uiMessage =
+                            if (appLanguage == AppLanguage.Chinese) "🎉 采集完成！保存至: $actualFileName" else "🎉 Scan completed! Saved: $actualFileName"
                     }
                 }
 
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    uiMessage = if (appLanguage == AppLanguage.Chinese) "❌ 采集异常: ${e.message}" else "❌ Acquisition error: ${e.message}"
+                    uiMessage =
+                        if (appLanguage == AppLanguage.Chinese) "❌ 采集异常: ${e.message}" else "❌ Acquisition error: ${e.message}"
                 }
             } finally {
                 withContext(Dispatchers.Main) { isAcquiring = false }
@@ -424,7 +521,8 @@ class SpectrometerViewModel {
             try {
                 driver.stopAcquisition()
                 withContext(Dispatchers.Main) {
-                    uiMessage = if (appLanguage == AppLanguage.Chinese) "🛑 已手动中断光谱采集" else "🛑 Spectrometer acquisition manually aborted"
+                    uiMessage =
+                        if (appLanguage == AppLanguage.Chinese) "🛑 已手动中断光谱采集" else "🛑 Spectrometer acquisition manually aborted"
                 }
             } catch (e: Exception) {
                 log.error("Error aborting driver sequence.", e)
@@ -434,7 +532,8 @@ class SpectrometerViewModel {
 
     fun startAutoSequence() {
         if (isAutoSequenceRunning || isAcquiring || !isConfigApplied) {
-            uiMessage = if (appLanguage == AppLanguage.Chinese) "⚠️ 无法启动：设备未就绪、参数未下发或任务运行中" else "⚠️ Cannot start: Device not ready or task running"
+            uiMessage =
+                if (appLanguage == AppLanguage.Chinese) "⚠️ 无法启动：设备未就绪、参数未下发或任务运行中" else "⚠️ Cannot start: Device not ready or task running"
             return
         }
 
@@ -444,7 +543,13 @@ class SpectrometerViewModel {
 
         isAutoSequenceRunning = true
         autoSequenceCompletedCount = 0
-        log.info("[AUTO SCAN] Started. Mode: {}, Count: {}, Duration: {}ms, Interval: {}ms", autoScanMode, count, durationMs, intervalMs)
+        log.info(
+            "[AUTO SCAN] Started. Mode: {}, Count: {}, Duration: {}ms, Interval: {}ms",
+            autoScanMode,
+            count,
+            durationMs,
+            intervalMs
+        )
 
         scope.launch(Dispatchers.IO) {
             val startTime = System.currentTimeMillis()
@@ -459,7 +564,9 @@ class SpectrometerViewModel {
                     withContext(Dispatchers.Main) { startAcquisition() }
 
                     // 3. 挂起等待单次采集结束
-                    while (isAcquiring && isAutoSequenceRunning) { delay(200) }
+                    while (isAcquiring && isAutoSequenceRunning) {
+                        delay(200)
+                    }
 
                     if (!isAutoSequenceRunning) break
                     autoSequenceCompletedCount++
@@ -476,7 +583,8 @@ class SpectrometerViewModel {
             } finally {
                 isAutoSequenceRunning = false
                 withContext(Dispatchers.Main) {
-                    uiMessage = if (appLanguage == AppLanguage.Chinese) "🎉 自动采集任务已结束 (共 $autoSequenceCompletedCount 次)" else "🎉 Auto sequence finished ($autoSequenceCompletedCount scans)"
+                    uiMessage =
+                        if (appLanguage == AppLanguage.Chinese) "🎉 自动采集任务已结束 (共 $autoSequenceCompletedCount 次)" else "🎉 Auto sequence finished ($autoSequenceCompletedCount scans)"
                 }
             }
         }
@@ -487,6 +595,7 @@ class SpectrometerViewModel {
         log.info("[USER ACTION] Aborting auto sequence.")
         isAutoSequenceRunning = false
         stopAcquisition() // 同步中断底层硬件采集
-        uiMessage = if (appLanguage == AppLanguage.Chinese) "🛑 自动采集已被人工中止" else "🛑 Auto sequence aborted by user"
+        uiMessage =
+            if (appLanguage == AppLanguage.Chinese) "🛑 自动采集已被人工中止" else "🛑 Auto sequence aborted by user"
     }
 }

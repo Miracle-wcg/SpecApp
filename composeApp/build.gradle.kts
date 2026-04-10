@@ -72,6 +72,11 @@ compose.desktop {
                 configurationFiles.from(project.file("proguard-rules.pro"))
             }
 
+            // ==========================================
+            // 🌟 核心打包配置：将外置的 ONNX 模型一起打进安装包
+            // ==========================================
+            appResourcesRootDir.set(project.layout.projectDirectory.dir("app_resources"))
+
             windows {
                 menuGroup = "SpectraX Analytics"
                 shortcut = true
