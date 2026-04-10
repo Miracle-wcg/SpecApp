@@ -44,8 +44,9 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Msi, TargetFormat.Exe)
+
             packageName = "SpectraX"
-            packageVersion = "1.0.0"
+            packageVersion = "1.0.1"
 
             // 必须项：防止 Windows 打包时报 NullPointerException
             vendor = "WCG Instruments"
@@ -75,7 +76,7 @@ compose.desktop {
             // ==========================================
             // 🌟 核心打包配置：将外置的 ONNX 模型一起打进安装包
             // ==========================================
-            appResourcesRootDir.set(project.layout.projectDirectory.dir("app_resources"))
+//            appResourcesRootDir.set(project.layout.projectDirectory.dir("app_resources"))
 
             windows {
                 menuGroup = "SpectraX Analytics"
