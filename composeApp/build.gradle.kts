@@ -43,16 +43,13 @@ compose.desktop {
         mainClass = "com.wcg.app.specapp.MainKt"
 
         nativeDistributions {
-            targetFormats(
-                TargetFormat.Exe,
-                TargetFormat.Msi
-            )
-
+            targetFormats(TargetFormat.Msi, TargetFormat.Exe)
             packageName = "SpectraX"
-            packageVersion = "1.0.1"
+            packageVersion = "1.0.0"
 
-            description = "Spec Application"
-            vendor = "wcg"
+            // 必须项：防止 Windows 打包时报 NullPointerException
+            vendor = "WCG Instruments"
+            description = "SpectraX Quantitative Analysis"
 
             modules(
                 "java.base",
@@ -62,29 +59,28 @@ compose.desktop {
                 "java.management"
             )
 
-            windows {
-                // ✔ EXE 图标
-                iconFile.set(project.file("src/jvmMain/resources/icon.ico"))
+            // ==========================================
+            // 🌟 核心压缩配置：ProGuard 代码摇树与瘦身
+            // ==========================================
+            buildTypes.release.proguard {
+                version.set("7.3.2")
+                isEnabled.set(true)
+                optimize.set(true)   // 剔除所有未使用的死代码（极大减小体积）
+                obfuscate.set(false) // 保持 false 以防崩溃
 
-                // ✔ 控制台关闭（桌面应用建议）
-                console = false
-
-                // ✔ 安装目录
-                dirChooser = true
-
-                // ✔ 快捷方式
-                shortcut = true
-
-                // ✔ 开机菜单
-                menu = true
-
-                // ✔ 升级支持
-                upgradeUuid = "123e4567-e89b-12d3-a456-426614174000"
-                perUserInstall = true
+                // 引入防崩溃保护规则
+                configurationFiles.from(project.file("proguard-rules.pro"))
             }
 
-            buildTypes.release.proguard {
-                isEnabled.set(false)
+            windows {
+                menuGroup = "SpectraX Analytics"
+                shortcut = true
+                iconFile.set(project.file("src/jvmMain/resources/icon.ico"))
+                console = false // 隐藏运行时的黑色 CMD 窗口
+                shortcut = true
+                upgradeUuid = "123e4567-e89b-12d3-a456-426614174000"
+                perUserInstall = true
+                dirChooser = true
             }
         }
     }
