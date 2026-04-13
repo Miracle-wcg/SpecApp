@@ -49,7 +49,7 @@ compose.desktop {
             packageVersion = "1.0.1"
 
             // 必须项：防止 Windows 打包时报 NullPointerException
-            vendor = "WCG Instruments"
+            vendor = "Jitrioe"
             description = "SpectraX Quantitative Analysis"
 
             modules(

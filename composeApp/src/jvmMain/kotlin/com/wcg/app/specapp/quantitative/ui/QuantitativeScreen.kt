@@ -67,7 +67,8 @@ fun QuantitativeScreen(appViewModel: SpectrometerViewModel) {
                     Text(if (lang == AppLanguage.Chinese) "🛠️ 绑定校准背景" else "🛠️ Bind Reference", color = TextWhite, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     FilePickerBox(
                         label = if (lang == AppLanguage.Chinese) "选择参比/白板光谱 (Ref)" else "Select Reference Spectrum",
-                        selectedName = viewModel.refFile?.name, modifier = Modifier.fillMaxWidth()
+                        selectedName = viewModel.refFile?.name, modifier = Modifier.fillMaxWidth(),
+                        placeholder = if (lang == AppLanguage.Chinese) "点击选择文件..." else "Click to select file...",
                     ) {
                         val files = NativeDialogUtils.pickFiles(if (lang == AppLanguage.Chinese) "选择参比光谱" else "Select Ref Spectrum", false)
                         if (files.isNotEmpty()) viewModel.refFile = files.first()
@@ -345,7 +346,7 @@ private fun GridHeader(text: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun FilePickerBox(label: String, selectedName: String?, modifier: Modifier = Modifier, onClick: () -> Unit) {
+fun FilePickerBox(label: String, selectedName: String?,placeholder: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Column(modifier = modifier) {
         Text(label, color = TextMuted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
@@ -353,7 +354,7 @@ fun FilePickerBox(label: String, selectedName: String?, modifier: Modifier = Mod
             modifier = Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(4.dp)).background(BgDark).border(1.dp, if (selectedName != null) AccentCyan else BorderDark, RoundedCornerShape(4.dp)).clickable { onClick() }.padding(horizontal = 12.dp),
             contentAlignment = Alignment.CenterStart
         ) {
-            Text(text = selectedName ?: "点击选择文件...", color = if (selectedName != null) TextWhite else TextMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(text = selectedName ?: placeholder, color = if (selectedName != null) TextWhite else TextMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

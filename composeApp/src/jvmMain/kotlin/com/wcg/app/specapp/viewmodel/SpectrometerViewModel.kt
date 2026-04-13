@@ -71,9 +71,67 @@ class SpectrometerViewModel {
     var isAutoSequenceRunning by mutableStateOf(false)
     var autoSequenceCompletedCount by mutableStateOf(0)
 
-    var fileNameTemplate by mutableStateOf("[操作员]_[批次号]_[时间戳]")
+    // 🌟 优化 1：修复默认语言不同步的问题。默认英文环境则展示英文占位符
+    var fileNameTemplate by mutableStateOf(
+        if (appLanguage == AppLanguage.Chinese) "[操作员]_[批次号]_[时间戳]" else "[Operator]_[Batch]_[Timestamp]"
+    )
     var operatorName by mutableStateOf("Admin")
     var batchNumber by mutableStateOf("B001")
+
+    // ==========================================
+    // 🌟 命名模板配置联动与控制
+    // ==========================================
+    // 🌟 1. 新增弹窗相关状态
+    var showDialog by mutableStateOf(false)
+    var dialogTitle by mutableStateOf("")
+    var dialogMessage by mutableStateOf("")
+
+    // 🌟 2. 优化命名模板保存逻辑
+    fun saveNamingConfig() {
+        dialogTitle = if (appLanguage == AppLanguage.Chinese) "系统提示" else "System Notification"
+        dialogMessage = if (appLanguage == AppLanguage.Chinese) "✅ 命名规则已保存，将在下次采集时生效" else "✅ Naming rules saved for next acquisition"
+        showDialog = true
+        log.info("File naming config saved.")
+    }
+
+    // 🌟 3. 优化命名模板重置逻辑
+    fun restoreDefaultNaming() {
+        fileNameTemplate = if (appLanguage == AppLanguage.Chinese) "[操作员]_[批次号]_[时间戳]" else "[Operator]_[Batch]_[Timestamp]"
+        operatorName = "Admin"
+        batchNumber = "B001"
+        dialogTitle = if (appLanguage == AppLanguage.Chinese) "系统提示" else "System Notification"
+        dialogMessage = if (appLanguage == AppLanguage.Chinese) "✅ 命名模板已恢复默认设置" else "✅ Naming template restored to default"
+        showDialog = true
+    }
+
+    // 🌟 4. 新增/优化算法引擎加载逻辑
+    fun loadOnnxModels() {
+        try {
+            ChemometricsEngine.loadModels(onnxModelDirectory)
+            dialogTitle = if (appLanguage == AppLanguage.Chinese) "系统提示" else "System Notification"
+            dialogMessage = if (appLanguage == AppLanguage.Chinese) "✅ ONNX 模型组已成功加载至内存" else "✅ ONNX models loaded successfully"
+            showDialog = true
+        } catch (e: Exception) {
+            dialogTitle = if (appLanguage == AppLanguage.Chinese) "加载失败" else "Load Failed"
+            dialogMessage = "❌ ${e.message}"
+            showDialog = true
+        }
+    }
+
+    // 🌟 5. 优化算法引擎重置逻辑
+    fun resetOnnxDirectory() {
+        onnxModelDirectory = defaultOnnxDirectory
+        try {
+            ChemometricsEngine.loadModels(onnxModelDirectory)
+            dialogTitle = if (appLanguage == AppLanguage.Chinese) "系统提示" else "System Notification"
+            dialogMessage = if (appLanguage == AppLanguage.Chinese) "✅ 已重置为项目默认模型并完成加载" else "✅ Reset to default models and loaded"
+            showDialog = true
+        } catch (e: Exception) {
+            dialogTitle = if (appLanguage == AppLanguage.Chinese) "系统错误" else "System Error"
+            dialogMessage = if (appLanguage == AppLanguage.Chinese) "⚠️ 默认目录模型丢失，请检查资源文件" else "⚠️ Default models not found"
+            showDialog = true
+        }
+    }
 
     // 🌟 新增：将智能分析页面的 ViewModel 提升到顶层管理，防止页面切换时数据丢失！
     val quantitativeViewModel = QuantitativeViewModel(
@@ -98,19 +156,6 @@ class SpectrometerViewModel {
             }
         } catch (e: Exception) {
             log.error("Failed to auto-load default ONNX models", e)
-        }
-    }
-
-    // 重置模型目录为项目默认
-    fun resetOnnxDirectory() {
-        onnxModelDirectory = defaultOnnxDirectory
-        try {
-            ChemometricsEngine.loadModels(onnxModelDirectory)
-            uiMessage =
-                if (appLanguage == AppLanguage.Chinese) "✅ 已重置为项目默认模型并加载" else "✅ Reset to default project models and loaded"
-        } catch (e: Exception) {
-            uiMessage =
-                if (appLanguage == AppLanguage.Chinese) "⚠️ 默认目录不存在模型" else "⚠️ No models in default directory"
         }
     }
 
