@@ -19,7 +19,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wcg.app.specapp.quantitative.ui.QuantitativeScreen
-import java.io.File
+import com.wcg.app.specapp.ui.screens.AnalysisScreen
+import com.wcg.app.specapp.ui.screens.AutoScanScreen
+import com.wcg.app.specapp.ui.screens.SettingsScreen
+import com.wcg.app.specapp.ui.screens.SetupScreen
+import com.wcg.app.specapp.ui.theme.*
+import com.wcg.app.specapp.viewmodel.AppLanguage
+import com.wcg.app.specapp.viewmodel.AppScreen
+import com.wcg.app.specapp.viewmodel.SpectrometerViewModel
 import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
 
@@ -92,7 +99,9 @@ fun TopNavBar(viewModel: SpectrometerViewModel) {
                 }
             },
             modifier = Modifier.height(36.dp), shape = RoundedCornerShape(4.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextWhite), border = BorderStroke(1.dp, BorderDark)
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextWhite), border = BorderStroke(1.dp,
+                BorderDark
+            )
         ) {
             Text(if (lang == AppLanguage.Chinese) "📂 打开数据" else "📂 Open Data", fontWeight = FontWeight.Bold, fontSize = 12.sp)
         }

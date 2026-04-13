@@ -5,7 +5,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.spectrometer.subsystem.SpectrumStorage
-import com.wcg.app.specapp.AppLanguage
+import com.wcg.app.specapp.viewmodel.AppLanguage
 import com.wcg.app.specapp.quantitative.model.PredictionResult
 import com.wcg.app.specapp.quantitative.model.ProcessState
 import com.wcg.app.specapp.quantitative.service.QuantitativeService

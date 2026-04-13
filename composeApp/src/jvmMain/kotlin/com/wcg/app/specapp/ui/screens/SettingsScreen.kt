@@ -1,4 +1,4 @@
-package com.wcg.app.specapp
+package com.wcg.app.specapp.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -21,6 +21,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.wcg.app.specapp.ui.theme.AccentCyan
+import com.wcg.app.specapp.viewmodel.AppLanguage
+import com.wcg.app.specapp.ui.theme.BgDark
+import com.wcg.app.specapp.ui.theme.BorderDark
+import com.wcg.app.specapp.ui.theme.DangerRed
+import com.wcg.app.specapp.ui.theme.PanelBg
+import com.wcg.app.specapp.viewmodel.SpectrometerViewModel
+import com.wcg.app.specapp.ui.theme.TextMuted
+import com.wcg.app.specapp.ui.theme.TextWhite
+import com.wcg.app.specapp.ui.theme.WarningOrange
 import com.wcg.app.specapp.quantitative.algorithm.ChemometricsEngine
 import com.wcg.app.specapp.utils.NativeDialogUtils
 import kotlinx.coroutines.Dispatchers
@@ -114,7 +124,8 @@ private fun SystemStatusPanel(viewModel: SpectrometerViewModel, modifier: Modifi
             Spacer(modifier = Modifier.weight(1f))
 
             Box(
-                modifier = Modifier.fillMaxWidth().background(Color(0xFF1E2D4A), RoundedCornerShape(8.dp)).border(1.dp, BorderDark, RoundedCornerShape(8.dp)).padding(16.dp),
+                modifier = Modifier.fillMaxWidth().background(Color(0xFF1E2D4A), RoundedCornerShape(8.dp)).border(1.dp,
+                    BorderDark, RoundedCornerShape(8.dp)).padding(16.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -313,7 +324,8 @@ private fun SystemLogPanel(viewModel: SpectrometerViewModel, modifier: Modifier 
             Spacer(modifier = Modifier.height(16.dp))
 
             Box(
-                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp)).background(Color(0xFF0F172A)).border(1.dp, BorderDark, RoundedCornerShape(4.dp)).padding(12.dp)
+                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp)).background(Color(0xFF0F172A)).border(1.dp,
+                    BorderDark, RoundedCornerShape(4.dp)).padding(12.dp)
             ) {
                 if (logLines.isEmpty()) {
                     Text(if (lang == AppLanguage.Chinese) "暂无日志..." else "No logs available...", color = TextMuted, fontSize = 12.sp, fontFamily = FontFamily.Monospace)

@@ -1,4 +1,4 @@
-package com.wcg.app.specapp
+package com.wcg.app.specapp.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -15,6 +15,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.wcg.app.specapp.ui.theme.AccentCyan
+import com.wcg.app.specapp.viewmodel.AppLanguage
+import com.wcg.app.specapp.viewmodel.AutoScanMode
+import com.wcg.app.specapp.ui.theme.BgDark
+import com.wcg.app.specapp.ui.theme.BorderDark
+import com.wcg.app.specapp.ui.theme.DangerRed
+import com.wcg.app.specapp.ui.theme.PanelBg
+import com.wcg.app.specapp.viewmodel.SpectrometerViewModel
+import com.wcg.app.specapp.ui.theme.TextMuted
+import com.wcg.app.specapp.ui.theme.TextWhite
+import com.wcg.app.specapp.ui.theme.WarningOrange
 
 @Composable
 fun AutoScanScreen(viewModel: SpectrometerViewModel) {
@@ -138,9 +149,11 @@ fun AutoScanScreen(viewModel: SpectrometerViewModel) {
                     }
 
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        StatBox(if (lang == AppLanguage.Chinese) "已完成 / Completed" else "Completed", "${viewModel.autoSequenceCompletedCount}", AccentCyan, Modifier.weight(1f))
+                        StatBox(if (lang == AppLanguage.Chinese) "已完成 / Completed" else "Completed", "${viewModel.autoSequenceCompletedCount}",
+                            AccentCyan, Modifier.weight(1f))
                         Spacer(modifier = Modifier.width(16.dp))
-                        StatBox(if (lang == AppLanguage.Chinese) "目标量 / Target" else "Target", targetText, TextMuted, Modifier.weight(1f))
+                        StatBox(if (lang == AppLanguage.Chinese) "目标量 / Target" else "Target", targetText,
+                            TextMuted, Modifier.weight(1f))
                     }
 
                     Spacer(modifier = Modifier.height(32.dp))

@@ -1,4 +1,4 @@
-package com.wcg.app.specapp
+package com.wcg.app.specapp.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -17,6 +17,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.wcg.app.specapp.ui.theme.AccentCyan
+import com.wcg.app.specapp.viewmodel.AppLanguage
+import com.wcg.app.specapp.ui.theme.BgDark
+import com.wcg.app.specapp.ui.theme.BorderDark
+import com.wcg.app.specapp.ui.theme.DangerRed
+import com.wcg.app.specapp.ui.components.DarkTextField
+import com.wcg.app.specapp.ui.theme.PanelBg
+import com.wcg.app.specapp.viewmodel.SpectrometerViewModel
+import com.wcg.app.specapp.ui.theme.TextMuted
+import com.wcg.app.specapp.ui.theme.TextWhite
+import com.wcg.app.specapp.ui.theme.WarningOrange
 import java.io.File
 import javax.swing.JFileChooser
 
@@ -111,8 +122,18 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                             subtitle = "TCP COMMUNICATION"
                         ) {
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                DarkTextField(if (lang == AppLanguage.Chinese) "服务器 IP" else "SERVER IP", serverIp, { serverIp = it; config.serverIp = it }, Modifier.weight(1.5f))
-                                DarkTextField(if (lang == AppLanguage.Chinese) "TCP 端口" else "TCP PORT", tcpPort, { tcpPort = it; it.toIntOrNull()?.let { v -> config.tcpPort = v } }, Modifier.weight(1f))
+                                DarkTextField(
+                                    if (lang == AppLanguage.Chinese) "服务器 IP" else "SERVER IP",
+                                    serverIp,
+                                    { serverIp = it; config.serverIp = it },
+                                    Modifier.weight(1.5f)
+                                )
+                                DarkTextField(
+                                    if (lang == AppLanguage.Chinese) "TCP 端口" else "TCP PORT",
+                                    tcpPort,
+                                    { tcpPort = it; it.toIntOrNull()?.let { v -> config.tcpPort = v } },
+                                    Modifier.weight(1f)
+                                )
                             }
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(
@@ -134,8 +155,18 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                             subtitle = "BOARD INIT"
                         ) {
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                DarkTextField(if (lang == AppLanguage.Chinese) "板卡名称" else "BOARD NAME", viewModel.boardName, { viewModel.boardName = it; config.boardName = it }, Modifier.weight(1.5f))
-                                DarkTextField(if (lang == AppLanguage.Chinese) "UDP 端口" else "UDP PORT", udpPort, { udpPort = it; it.toIntOrNull()?.let { v -> config.udpPort = v } }, Modifier.weight(1f))
+                                DarkTextField(
+                                    if (lang == AppLanguage.Chinese) "板卡名称" else "BOARD NAME",
+                                    viewModel.boardName,
+                                    { viewModel.boardName = it; config.boardName = it },
+                                    Modifier.weight(1.5f)
+                                )
+                                DarkTextField(
+                                    if (lang == AppLanguage.Chinese) "UDP 端口" else "UDP PORT",
+                                    udpPort,
+                                    { udpPort = it; it.toIntOrNull()?.let { v -> config.udpPort = v } },
+                                    Modifier.weight(1f)
+                                )
                             }
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(
@@ -158,14 +189,54 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                             subtitle = "OPTICS"
                         ) {
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                DarkTextField(if (lang == AppLanguage.Chinese) "起始波段" else "START WAVE", startWave, { startWave = it; it.toFloatOrNull()?.let { v -> config.params.startWave = v }; viewModel.isConfigApplied = false }, Modifier.weight(1f))
-                                DarkTextField(if (lang == AppLanguage.Chinese) "截止波段" else "STOP WAVE", stopWave, { stopWave = it; it.toFloatOrNull()?.let { v -> config.params.stopWave = v }; viewModel.isConfigApplied = false }, Modifier.weight(1f))
+                                DarkTextField(
+                                    if (lang == AppLanguage.Chinese) "起始波段" else "START WAVE",
+                                    startWave,
+                                    {
+                                        startWave = it; it.toFloatOrNull()
+                                        ?.let { v -> config.params.startWave = v }; viewModel.isConfigApplied = false
+                                    },
+                                    Modifier.weight(1f)
+                                )
+                                DarkTextField(
+                                    if (lang == AppLanguage.Chinese) "截止波段" else "STOP WAVE",
+                                    stopWave,
+                                    {
+                                        stopWave = it; it.toFloatOrNull()
+                                        ?.let { v -> config.params.stopWave = v }; viewModel.isConfigApplied = false
+                                    },
+                                    Modifier.weight(1f)
+                                )
                             }
                             Spacer(modifier = Modifier.height(16.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                DarkTextField(if (lang == AppLanguage.Chinese) "累加次数" else "NUM SCANS", numScans, { numScans = it; it.toIntOrNull()?.let { v -> config.params.numScans = v }; viewModel.isConfigApplied = false }, Modifier.weight(1f))
-                                DarkTextField(if (lang == AppLanguage.Chinese) "运行次数" else "NUM RUNS", numRuns, { numRuns = it; it.toIntOrNull()?.let { v -> config.params.numRuns = v }; viewModel.isConfigApplied = false }, Modifier.weight(1f))
-                                DarkTextField(if (lang == AppLanguage.Chinese) "激光频率" else "LASER FREQ", laserFreq, { laserFreq = it; it.toDoubleOrNull()?.let { v -> config.laserFreq = v }; viewModel.isConfigApplied = false }, Modifier.weight(1f))
+                                DarkTextField(
+                                    if (lang == AppLanguage.Chinese) "累加次数" else "NUM SCANS",
+                                    numScans,
+                                    {
+                                        numScans = it; it.toIntOrNull()
+                                        ?.let { v -> config.params.numScans = v }; viewModel.isConfigApplied = false
+                                    },
+                                    Modifier.weight(1f)
+                                )
+                                DarkTextField(
+                                    if (lang == AppLanguage.Chinese) "运行次数" else "NUM RUNS",
+                                    numRuns,
+                                    {
+                                        numRuns = it; it.toIntOrNull()
+                                        ?.let { v -> config.params.numRuns = v }; viewModel.isConfigApplied = false
+                                    },
+                                    Modifier.weight(1f)
+                                )
+                                DarkTextField(
+                                    if (lang == AppLanguage.Chinese) "激光频率" else "LASER FREQ",
+                                    laserFreq,
+                                    {
+                                        laserFreq = it; it.toDoubleOrNull()
+                                        ?.let { v -> config.laserFreq = v }; viewModel.isConfigApplied = false
+                                    },
+                                    Modifier.weight(1f)
+                                )
                             }
                             Spacer(modifier = Modifier.height(16.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -257,7 +328,12 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                             Text(if (lang == AppLanguage.Chinese) "默认导出路径" else "DEFAULT EXPORT PATH", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.height(4.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                DarkTextField("", savePath, { savePath = it; config.savePath = it; config.savePathWindows = it }, Modifier.weight(1f))
+                                DarkTextField(
+                                    "",
+                                    savePath,
+                                    { savePath = it; config.savePath = it; config.savePathWindows = it },
+                                    Modifier.weight(1f)
+                                )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Button(
                                     onClick = {
@@ -280,7 +356,12 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                             }
 
                             Spacer(modifier = Modifier.height(16.dp))
-                            DarkTextField(if (lang == AppLanguage.Chinese) "采集超时(ms)" else "ACQ TIMEOUT(ms)", timeoutMs, { timeoutMs = it; it.toLongOrNull()?.let { v -> config.autoCollect.timeoutMs = v } }, Modifier.fillMaxWidth())
+                            DarkTextField(
+                                if (lang == AppLanguage.Chinese) "采集超时(ms)" else "ACQ TIMEOUT(ms)",
+                                timeoutMs,
+                                { timeoutMs = it; it.toLongOrNull()?.let { v -> config.autoCollect.timeoutMs = v } },
+                                Modifier.fillMaxWidth()
+                            )
 
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(if (lang == AppLanguage.Chinese) "默认数据格式" else "DEFAULT DATA FORMAT", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
@@ -325,7 +406,8 @@ fun SetupCard(title: String, subtitle: String, content: @Composable () -> Unit) 
 @Composable
 fun ConnectionPipelineBanner(lang: AppLanguage, isTcpOk: Boolean, isBoardOk: Boolean, isConfigOk: Boolean) {
     Row(
-        modifier = Modifier.fillMaxWidth().background(PanelBg, RoundedCornerShape(8.dp)).border(1.dp, BorderDark, RoundedCornerShape(8.dp)).padding(16.dp),
+        modifier = Modifier.fillMaxWidth().background(PanelBg, RoundedCornerShape(8.dp)).border(1.dp,
+            BorderDark, RoundedCornerShape(8.dp)).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {

@@ -1,4 +1,4 @@
-package com.wcg.app.specapp
+package com.wcg.app.specapp.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

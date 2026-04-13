@@ -1,4 +1,4 @@
-package com.wcg.app.specapp
+package com.wcg.app.specapp.ui.screens
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -29,6 +30,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.wcg.app.specapp.ui.theme.AccentCyan
+import com.wcg.app.specapp.viewmodel.AppLanguage
+import com.wcg.app.specapp.ui.theme.BgDark
+import com.wcg.app.specapp.ui.theme.BorderDark
+import com.wcg.app.specapp.ui.theme.DangerRed
+import com.wcg.app.specapp.ui.theme.PanelBg
+import com.wcg.app.specapp.viewmodel.SpectrometerViewModel
+import com.wcg.app.specapp.ui.theme.TextMuted
+import com.wcg.app.specapp.ui.theme.TextWhite
+import com.wcg.app.specapp.ui.theme.WarningOrange
 import kotlin.math.abs
 
 @Composable
@@ -141,7 +152,8 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
     var offsetY by remember { mutableStateOf(0f) }
 
     BoxWithConstraints(
-        modifier = modifier.clip(RoundedCornerShape(8.dp)).background(PanelBg).border(1.dp, BorderDark, RoundedCornerShape(8.dp))
+        modifier = modifier.clip(RoundedCornerShape(8.dp)).background(PanelBg).border(1.dp,
+            BorderDark, RoundedCornerShape(8.dp))
     ) {
         val widthPx = constraints.maxWidth.toFloat()
         val heightPx = constraints.maxHeight.toFloat()
@@ -300,7 +312,7 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
                             if (tLeft + tw > paddingStart + chartWidth) tLeft = cOffset.x - tw - 15f
                             if (tTop < paddingTop) tTop = cOffset.y + 15f
 
-                            drawRoundRect(color = AccentCyan, topLeft = Offset(tLeft, tTop), size = Size(tw, th), cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx()))
+                            drawRoundRect(color = AccentCyan, topLeft = Offset(tLeft, tTop), size = Size(tw, th), cornerRadius = CornerRadius(4.dp.toPx()))
                             drawText(tr, topLeft = Offset(tLeft + 15f, tTop + 10f))
                         }
                     }
@@ -317,7 +329,8 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
         Text(xAxisText, color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp))
         Text(helperText, color = TextMuted.copy(alpha = 0.5f), fontSize = 10.sp, modifier = Modifier.align(Alignment.TopCenter).padding(top = 12.dp))
 
-        Column(modifier = Modifier.align(Alignment.TopEnd).padding(16.dp).background(Color(0xFF2A364B).copy(alpha = 0.8f), RoundedCornerShape(4.dp)).border(1.dp, BorderDark, RoundedCornerShape(4.dp)).padding(12.dp)) {
+        Column(modifier = Modifier.align(Alignment.TopEnd).padding(16.dp).background(Color(0xFF2A364B).copy(alpha = 0.8f), RoundedCornerShape(4.dp)).border(1.dp,
+            BorderDark, RoundedCornerShape(4.dp)).padding(12.dp)) {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.width(110.dp)) {
                 Text(if (lang == AppLanguage.Chinese) "峰值 X" else "Peak X", color = TextMuted, fontSize = 10.sp)
                 Text(viewModel.peakX, color = WarningOrange, fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -364,7 +377,9 @@ private fun InstrumentConfigSingleLinePanel(viewModel: SpectrometerViewModel, mo
         0 -> "28"; 1 -> "56"; 2 -> "112"; 3 -> "225"; 4 -> "450"; 5 -> "900"; 6 -> "1800"; 7 -> "3600"; else -> "Unknown"
     }
 
-    Card(modifier = modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = PanelBg), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, BorderDark)) {
+    Card(modifier = modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = PanelBg), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp,
+        BorderDark
+    )) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,

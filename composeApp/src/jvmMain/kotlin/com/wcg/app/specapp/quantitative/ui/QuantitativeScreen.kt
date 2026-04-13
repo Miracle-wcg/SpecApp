@@ -31,9 +31,18 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.wcg.app.specapp.*
 import com.wcg.app.specapp.quantitative.model.ProcessState
+import com.wcg.app.specapp.ui.theme.AccentCyan
+import com.wcg.app.specapp.ui.theme.BgDark
+import com.wcg.app.specapp.ui.theme.BorderDark
+import com.wcg.app.specapp.ui.theme.DangerRed
+import com.wcg.app.specapp.ui.theme.PanelBg
+import com.wcg.app.specapp.ui.theme.TextMuted
+import com.wcg.app.specapp.ui.theme.TextWhite
+import com.wcg.app.specapp.ui.theme.WarningOrange
 import com.wcg.app.specapp.utils.NativeDialogUtils
+import com.wcg.app.specapp.viewmodel.AppLanguage
+import com.wcg.app.specapp.viewmodel.SpectrometerViewModel
 import kotlin.math.abs
 
 @Composable
@@ -51,7 +60,9 @@ fun QuantitativeScreen(appViewModel: SpectrometerViewModel) {
                 Text(if (lang == AppLanguage.Chinese) "/ 批量分析" else "/ Batch Analysis", color = AccentCyan, fontSize = 16.sp, modifier = Modifier.padding(bottom = 2.dp))
             }
 
-            Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = PanelBg), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, BorderDark)) {
+            Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = PanelBg), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp,
+                BorderDark
+            )) {
                 Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Text(if (lang == AppLanguage.Chinese) "🛠️ 绑定校准背景" else "🛠️ Bind Reference", color = TextWhite, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     FilePickerBox(
@@ -64,7 +75,9 @@ fun QuantitativeScreen(appViewModel: SpectrometerViewModel) {
                 }
             }
 
-            Card(modifier = Modifier.fillMaxWidth().weight(1f), colors = CardDefaults.cardColors(containerColor = PanelBg), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, BorderDark)) {
+            Card(modifier = Modifier.fillMaxWidth().weight(1f), colors = CardDefaults.cardColors(containerColor = PanelBg), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp,
+                BorderDark
+            )) {
                 Column(modifier = Modifier.padding(20.dp).fillMaxSize()) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Text(if (lang == AppLanguage.Chinese) "📋 待处理样本" else "📋 Sample Queue", color = TextWhite, fontSize = 14.sp, fontWeight = FontWeight.Bold)
@@ -139,7 +152,8 @@ fun QuantitativeScreen(appViewModel: SpectrometerViewModel) {
         Column(modifier = Modifier.weight(2.5f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
 
             // 3. 吸光度图表区
-            Box(modifier = Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(8.dp)).background(PanelBg).border(1.dp, BorderDark, RoundedCornerShape(8.dp))) {
+            Box(modifier = Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(8.dp)).background(PanelBg).border(1.dp,
+                BorderDark, RoundedCornerShape(8.dp))) {
                 val data = viewModel.selectedResult?.absorbanceSpectrum?.points ?: emptyList()
 
                 if (data.isEmpty()) {
@@ -153,7 +167,8 @@ fun QuantitativeScreen(appViewModel: SpectrometerViewModel) {
             }
 
             // 4. 预测结果 6 大指标数据网格
-            Box(modifier = Modifier.fillMaxWidth().weight(1.5f).clip(RoundedCornerShape(8.dp)).background(BgDark).border(1.dp, BorderDark, RoundedCornerShape(8.dp))) {
+            Box(modifier = Modifier.fillMaxWidth().weight(1.5f).clip(RoundedCornerShape(8.dp)).background(BgDark).border(1.dp,
+                BorderDark, RoundedCornerShape(8.dp))) {
                 Column {
                     Row(modifier = Modifier.fillMaxWidth().background(Color(0xFF1E2D4A)).padding(horizontal = 12.dp, vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         GridHeader(if (lang == AppLanguage.Chinese) "样本名称" else "Sample", Modifier.weight(2f))
