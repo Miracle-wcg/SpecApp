@@ -147,7 +147,33 @@ public class MetadataParser {
 
         buffer.position(stat.index);
         if (stat.length <= 1) {
-            return String.valueOf(extractNumericValue(buffer, stat));
+            Number val = extractNumericValue(buffer, stat);
+
+            // 【究极精度优化】：完美对齐 ABB C++ 底层的浮点数与科学计数法格式
+            if (val instanceof Float || val instanceof Double) {
+                double d = val.doubleValue();
+
+                // 1. 如果是纯整数，去掉 Java 默认带上的 .0
+                if (d == (long) d) {
+                    return String.valueOf((long) d);
+                }
+
+                // 2. 获取最精确的字符串表示（保留完整的有效数字，且自动启用科学计数法）
+                String s = Double.toString(d).toUpperCase();
+
+                // 3. 对齐 C++ 的科学计数法占位符
+                // Java 默认输出 E-6，而 C++ 底层 (ABB) 默认输出 E-06
+                if (s.contains("E-")) {
+                    int eIdx = s.indexOf("E-");
+                    // 如果 E- 后面只有一位数字，则在前面补 0
+                    if (s.length() - eIdx == 3) {
+                        s = s.substring(0, eIdx + 2) + "0" + s.substring(eIdx + 2);
+                    }
+                }
+                return s;
+            } else {
+                return String.valueOf(val);
+            }
         } else {
             int readLen = Math.min(stat.length, buffer.limit() - stat.index);
             byte[] arr = new byte[readLen];
@@ -164,23 +190,34 @@ public class MetadataParser {
 
         buffer.position(stat.index);
         switch (stat.type) {
-            case StatusDefinition.TYPE_BYTE: return buffer.get();
-            case StatusDefinition.TYPE_SHORT: return buffer.getShort();
-            case StatusDefinition.TYPE_INT: return buffer.getInt();
-            case StatusDefinition.TYPE_FLOAT: return buffer.getFloat();
-            case StatusDefinition.TYPE_DOUBLE: return buffer.getDouble();
-            default: return 0;
+            case StatusDefinition.TYPE_BYTE:
+                return buffer.get();
+            case StatusDefinition.TYPE_SHORT:
+                return buffer.getShort();
+            case StatusDefinition.TYPE_INT:
+                return buffer.getInt();
+            case StatusDefinition.TYPE_FLOAT:
+                return buffer.getFloat();
+            case StatusDefinition.TYPE_DOUBLE:
+                return buffer.getDouble();
+            default:
+                return 0;
         }
     }
 
     private int getDataTypeSize(byte type) {
         switch (type) {
-            case StatusDefinition.TYPE_BYTE: return 1;
-            case StatusDefinition.TYPE_SHORT: return 2;
+            case StatusDefinition.TYPE_BYTE:
+                return 1;
+            case StatusDefinition.TYPE_SHORT:
+                return 2;
             case StatusDefinition.TYPE_INT:
-            case StatusDefinition.TYPE_FLOAT: return 4;
-            case StatusDefinition.TYPE_DOUBLE: return 8;
-            default: return 0;
+            case StatusDefinition.TYPE_FLOAT:
+                return 4;
+            case StatusDefinition.TYPE_DOUBLE:
+                return 8;
+            default:
+                return 0;
         }
     }
 

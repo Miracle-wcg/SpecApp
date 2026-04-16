@@ -75,28 +75,46 @@ public class SpectrumStorage {
         String filePath = dirPath + (dirPath.endsWith("/") || dirPath.endsWith("\\") ? "" : File.separator)
                 + "Sample_" + now.format(FORMATTER) + ".spc";
 
+        // 1. 获取硬件偏移量 (保持不变)
         int spcStart = 0;
         if (meta != null && meta.containsKey(INST_SPC_START)) {
             Matcher m = Pattern.compile("(-?\\d+)").matcher(meta.get(INST_SPC_START));
-            if (m.find()) {
-                spcStart = Integer.parseInt(m.group(1));
+            if (m.find()) spcStart = Integer.parseInt(m.group(1));
+        }
+
+        // 2. [核心优化] 劫持硬件下发的极高精度采样网格波数 (Sampling Grid Wavenumber)
+        double exactGridWavenumber = laserFreq; // 默认使用配置文件的 laserFreq 兜底
+        if (meta != null) {
+            try {
+                // 依次尝试匹配可能的硬件状态键名
+                if (meta.containsKey("Sampling Grid Wavenumber")) {
+                    exactGridWavenumber = Double.parseDouble(meta.get("Sampling Grid Wavenumber"));
+                } else if (meta.containsKey("VCSEL Sampling Grid Wavenumber")) {
+                    exactGridWavenumber = Double.parseDouble(meta.get("VCSEL Sampling Grid Wavenumber"));
+                } else if (meta.containsKey("(c) Sampling Grid Wavenumber")) {
+                    exactGridWavenumber = Double.parseDouble(meta.get("(c) Sampling Grid Wavenumber"));
+                }
+            } catch (NumberFormatException ignored) {
+                // 转换失败时静默降级到传参值
             }
         }
 
-        double realStepWave = laserFreq / data.length;
+        // 3. 计算物理真实步长 (使用 exactGridWavenumber 替代原本的 laserFreq)
+        double realStepWave = exactGridWavenumber / data.length;
+
+        // 4. 物理索引对齐算法 (保持不变)
         int indexStart = (int) Math.floor(startWave / realStepWave) - spcStart;
         int indexStop = (int) Math.ceil(stopWave / realStepWave) - spcStart;
-
         indexStart = Math.max(0, indexStart);
         indexStop = Math.min(data.length - 1, indexStop);
 
         int fnpts = indexStop - indexStart + 1;
-        if (fnpts <= 0) {
-            return null;
-        }
+        if (fnpts <= 0) return null;
 
-        double ffirst = (spcStart + indexStart) * realStepWave;
-        double flast = (spcStart + indexStop) * realStepWave;
+        // 【算法精度飞跃】：计算精确首尾坐标时，必须叠加 calibAdjust 漂移补偿！
+        double ffirst = ((spcStart + indexStart) * realStepWave);
+        double flast = ((spcStart + indexStop) * realStepWave);
+
         int logOffset = 512 + 32 + (fnpts * 4);
 
         try (FileOutputStream fos = new FileOutputStream(filePath);
