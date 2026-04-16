@@ -425,7 +425,7 @@ fun SettingsDarkTextField(label: String, value: String, placeholder: String, onV
             onValueChange = onValueChange,
             singleLine = true,
             placeholder = { Text(placeholder, color = TextMuted.copy(alpha = 0.4f), fontSize = 12.sp) },
-            modifier = Modifier.fillMaxWidth().height(48.dp),
+            modifier = Modifier.fillMaxWidth(),
             textStyle = LocalTextStyle.current.copy(fontSize = 12.sp, fontWeight = FontWeight.Bold),
             colors = OutlinedTextFieldDefaults.colors(
                 unfocusedBorderColor = BorderDark,
