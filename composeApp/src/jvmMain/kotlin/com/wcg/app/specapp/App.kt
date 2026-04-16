@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.wcg.app.specapp.quantitative.ui.QuantitativeScreen
 import com.wcg.app.specapp.ui.screens.AnalysisScreen
 import com.wcg.app.specapp.ui.screens.AutoScanScreen
+import com.wcg.app.specapp.ui.screens.DataComparisonScreen
 import com.wcg.app.specapp.ui.screens.SettingsScreen
 import com.wcg.app.specapp.ui.screens.SetupScreen
 import com.wcg.app.specapp.ui.theme.*
@@ -52,6 +53,7 @@ fun App() {
                         AppScreen.Setup -> SetupScreen(viewModel)
                         AppScreen.AutoScan -> AutoScanScreen(viewModel)
                         AppScreen.Quantitative -> QuantitativeScreen(viewModel)
+                        AppScreen.Comparison -> DataComparisonScreen(viewModel)
                         AppScreen.Settings -> SettingsScreen(viewModel)
                         else -> {}
                     }

@@ -11,3 +11,7 @@ val TextMuted = Color(0xFF94A3B8)    // 次要文本
 val BorderDark = Color(0xFF2E3B52)   // 边框色
 val DangerRed = Color(0xFFEF4444)    // 停止/警告色
 val WarningOrange = Color(0xFFF59E0B) // 运行中状态色
+
+val ErrorRed = Color(0xFFFF5252)     // 报错时的红色
+val SuccessGreen = Color(0xFF69F0AE) // 成功时的绿色
+val WarningYellow = Color(0xFFFFD740)// 警告时的黄色

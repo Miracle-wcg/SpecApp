@@ -8,6 +8,8 @@ import com.spectrometer.driver.AcquisitionDriverClient
 import com.spectrometer.subsystem.MetadataParser
 import com.spectrometer.subsystem.SpectrometerDriver
 import com.spectrometer.subsystem.SpectrumStorage
+import com.wcg.app.specapp.business.ComparisonResult
+import com.wcg.app.specapp.business.DataComparisonService
 import com.wcg.app.specapp.business.FileNameGenerator
 import com.wcg.app.specapp.business.OnnxResourceManager
 import com.wcg.app.specapp.business.SpectrumDataProcessor
@@ -23,6 +25,7 @@ enum class AppScreen(val titleEn: String, val titleZh: String, val icon: String)
     Setup("Setup", "仪器设置", "☷"),
     AutoScan("Auto Scan", "自动采集", "⏳"),
     Quantitative("Quantitative", "智能分析", "🔬"),
+    Comparison("Data Validation", "精度验证", "⚖"),
     Settings("Settings", "系统设置", "⚙");
 
     fun title(lang: AppLanguage): String = if (lang == AppLanguage.Chinese) titleZh else titleEn
@@ -156,6 +159,39 @@ class SpectrometerViewModel {
             }
         } catch (e: Exception) {
             log.error("Failed to auto-load default ONNX models", e)
+        }
+    }
+
+    // 2. 在 SpectrometerViewModel 类中新增变量和方法
+    // ==========================================
+    // 🌟 数据对比验证状态 (Data Comparison)
+    // ==========================================
+    var refFilePathForComparison by mutableStateOf("")
+    var targetFilePathForComparison by mutableStateOf("")
+    var comparisonResult by mutableStateOf<ComparisonResult?>(null)
+    var isComparing by mutableStateOf(false)
+
+    fun runDataComparison() {
+        if (refFilePathForComparison.isEmpty() || targetFilePathForComparison.isEmpty()) {
+            uiMessage = if (appLanguage == AppLanguage.Chinese) "⚠️ 请先选择两个需要对比的光谱文件" else "⚠️ Please select both files to compare"
+            return
+        }
+
+        isComparing = true
+        comparisonResult = null
+        uiMessage = if (appLanguage == AppLanguage.Chinese) "⏳ 正在执行高精度比对..." else "⏳ Running high-precision comparison..."
+
+        scope.launch {
+            val result = DataComparisonService.evaluateAccuracy(refFilePathForComparison, targetFilePathForComparison)
+            withContext(Dispatchers.Main) {
+                comparisonResult = result
+                isComparing = false
+                uiMessage = if (result.isSuccess) {
+                    if (appLanguage == AppLanguage.Chinese) "✅ 验证完成" else "✅ Validation complete"
+                } else {
+                    "❌ ${result.message}"
+                }
+            }
         }
     }
 
