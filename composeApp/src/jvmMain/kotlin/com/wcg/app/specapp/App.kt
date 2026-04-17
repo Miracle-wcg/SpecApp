@@ -92,12 +92,16 @@ fun TopNavBar(viewModel: SpectrometerViewModel) {
         OutlinedButton(
             onClick = {
                 val chooser = JFileChooser(viewModel.config.savePath).apply {
-                    dialogTitle = if (lang == AppLanguage.Chinese) "选择历史光谱数据文件" else "Choose Spectrum File"
+                    dialogTitle = if (lang == AppLanguage.Chinese) "选择光谱数据文件 (支持多选)" else "Choose Spectrum Files"
                     fileFilter = FileNameExtensionFilter(if (lang == AppLanguage.Chinese) "光谱文件 (*.spc, *.txt)" else "Spectral Files (*.spc, *.txt)", "spc", "txt")
                     isAcceptAllFileFilterUsed = false
+                    // 🌟 [需求 2.1] 开启文件多选
+                    isMultiSelectionEnabled = true
                 }
                 if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-                    viewModel.importDataFile(chooser.selectedFile.absolutePath)
+                    // 🌟 [需求 2.2] 批量获取并导入
+                    val paths = chooser.selectedFiles.map { it.absolutePath }
+                    viewModel.importDataFiles(paths)
                     if (viewModel.currentScreen != AppScreen.Analysis) {
                         viewModel.currentScreen = AppScreen.Analysis
                     }
@@ -106,7 +110,6 @@ fun TopNavBar(viewModel: SpectrometerViewModel) {
             modifier = Modifier.height(36.dp), shape = RoundedCornerShape(4.dp),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = TextWhite), border = BorderStroke(1.dp, BorderDark)
         ) {
-            // 🌟 修复处 1：将 📂 替换为真正的矢量图标
             Icon(Icons.Default.FolderOpen, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(6.dp))
             Text(if (lang == AppLanguage.Chinese) "打开数据" else "Open Data", fontWeight = FontWeight.Bold, fontSize = 12.sp)
@@ -118,7 +121,6 @@ fun TopNavBar(viewModel: SpectrometerViewModel) {
             modifier = Modifier.size(32.dp).background(PanelBg, RoundedCornerShape(50))
                 .border(1.dp, BorderDark, RoundedCornerShape(50)), contentAlignment = Alignment.Center
         ) {
-            // 🌟 修复处 2：将 👤 替换为真正的矢量图标
             Icon(Icons.Default.Person, contentDescription = null, tint = TextMuted, modifier = Modifier.size(18.dp))
         }
     }
@@ -157,7 +159,6 @@ fun Sidebar(viewModel: SpectrometerViewModel, modifier: Modifier = Modifier) {
                     .padding(vertical = 12.dp, horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // 🌟 修复处 3：将 Text(screen.icon) 替换为 Icon(imageVector = screen.icon)
                 Icon(
                     imageVector = screen.icon,
                     contentDescription = null,
