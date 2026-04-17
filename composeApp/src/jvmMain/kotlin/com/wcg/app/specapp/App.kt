@@ -6,6 +6,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -101,11 +104,12 @@ fun TopNavBar(viewModel: SpectrometerViewModel) {
                 }
             },
             modifier = Modifier.height(36.dp), shape = RoundedCornerShape(4.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextWhite), border = BorderStroke(1.dp,
-                BorderDark
-            )
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextWhite), border = BorderStroke(1.dp, BorderDark)
         ) {
-            Text(if (lang == AppLanguage.Chinese) "📂 打开数据" else "📂 Open Data", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            // 🌟 修复处 1：将 📂 替换为真正的矢量图标
+            Icon(Icons.Default.FolderOpen, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(if (lang == AppLanguage.Chinese) "打开数据" else "Open Data", fontWeight = FontWeight.Bold, fontSize = 12.sp)
         }
 
         Spacer(modifier = Modifier.width(24.dp))
@@ -114,7 +118,8 @@ fun TopNavBar(viewModel: SpectrometerViewModel) {
             modifier = Modifier.size(32.dp).background(PanelBg, RoundedCornerShape(50))
                 .border(1.dp, BorderDark, RoundedCornerShape(50)), contentAlignment = Alignment.Center
         ) {
-            Text("👤", fontSize = 14.sp)
+            // 🌟 修复处 2：将 👤 替换为真正的矢量图标
+            Icon(Icons.Default.Person, contentDescription = null, tint = TextMuted, modifier = Modifier.size(18.dp))
         }
     }
 }
@@ -152,7 +157,13 @@ fun Sidebar(viewModel: SpectrometerViewModel, modifier: Modifier = Modifier) {
                     .padding(vertical = 12.dp, horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(screen.icon, color = if (isSelected) AccentCyan else TextMuted, fontSize = 16.sp)
+                // 🌟 修复处 3：将 Text(screen.icon) 替换为 Icon(imageVector = screen.icon)
+                Icon(
+                    imageVector = screen.icon,
+                    contentDescription = null,
+                    tint = if (isSelected) AccentCyan else TextMuted,
+                    modifier = Modifier.size(18.dp)
+                )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
                     screen.title(lang),

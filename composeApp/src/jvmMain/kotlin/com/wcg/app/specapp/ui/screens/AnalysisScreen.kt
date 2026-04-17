@@ -6,6 +6,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,16 +32,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.wcg.app.specapp.ui.theme.AccentCyan
+import com.wcg.app.specapp.ui.theme.*
 import com.wcg.app.specapp.viewmodel.AppLanguage
-import com.wcg.app.specapp.ui.theme.BgDark
-import com.wcg.app.specapp.ui.theme.BorderDark
-import com.wcg.app.specapp.ui.theme.DangerRed
-import com.wcg.app.specapp.ui.theme.PanelBg
 import com.wcg.app.specapp.viewmodel.SpectrometerViewModel
-import com.wcg.app.specapp.ui.theme.TextMuted
-import com.wcg.app.specapp.ui.theme.TextWhite
-import com.wcg.app.specapp.ui.theme.WarningOrange
 import kotlin.math.abs
 
 @Composable
@@ -91,13 +86,21 @@ private fun HeaderAndActions(viewModel: SpectrometerViewModel) {
                 onClick = { viewModel.stopAcquisition() },
                 modifier = Modifier.height(44.dp).width(if (lang == AppLanguage.Chinese) 120.dp else 140.dp), shape = RoundedCornerShape(4.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = DangerRed, contentColor = TextWhite)
-            ) { Text(if (lang == AppLanguage.Chinese) "🛑 停止" else "🛑 STOP", fontWeight = FontWeight.Bold) }
+            ) {
+                Icon(Icons.Default.Stop, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(if (lang == AppLanguage.Chinese) "停止" else "STOP", fontWeight = FontWeight.Bold)
+            }
 
             Button(
                 onClick = { viewModel.startAcquisition() },
                 modifier = Modifier.height(44.dp).width(if (lang == AppLanguage.Chinese) 160.dp else 200.dp), shape = RoundedCornerShape(4.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = AccentCyan, contentColor = BgDark)
-            ) { Text(if (lang == AppLanguage.Chinese) "▶ 开始采集" else "▶ START", fontWeight = FontWeight.ExtraBold) }
+            ) {
+                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(if (lang == AppLanguage.Chinese) "开始采集" else "START", fontWeight = FontWeight.ExtraBold)
+            }
         }
     }
 }
@@ -323,11 +326,16 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
         // --- Z轴上层：UI 控件 ---
         val yAxisText = if (lang == AppLanguage.Chinese) "强度" else "INTENSITY"
         val xAxisText = if (lang == AppLanguage.Chinese) "波数 [CM-1]" else "WAVENUMBER [CM-1]"
-        val helperText = if (lang == AppLanguage.Chinese) "💡 滚轮: 缩放X轴 | Ctrl+滚轮: 缩放Y轴 | 左键: 拖拽漫游" else "💡 Scroll: Zoom X | Ctrl+Scroll: Zoom Y | Left Click: Pan"
+        val helperText = if (lang == AppLanguage.Chinese) "滚轮: 缩放X轴 | Ctrl+滚轮: 缩放Y轴 | 左键: 拖拽漫游" else "Scroll: Zoom X | Ctrl+Scroll: Zoom Y | Left Click: Pan"
 
         Text(yAxisText, color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.TopStart).padding(start = 16.dp, top = 12.dp))
         Text(xAxisText, color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp))
-        Text(helperText, color = TextMuted.copy(alpha = 0.5f), fontSize = 10.sp, modifier = Modifier.align(Alignment.TopCenter).padding(top = 12.dp))
+
+        Row(modifier = Modifier.align(Alignment.TopCenter).padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.Info, contentDescription = null, tint = TextMuted.copy(alpha = 0.5f), modifier = Modifier.size(12.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(helperText, color = TextMuted.copy(alpha = 0.5f), fontSize = 10.sp)
+        }
 
         Column(modifier = Modifier.align(Alignment.TopEnd).padding(16.dp).background(Color(0xFF2A364B).copy(alpha = 0.8f), RoundedCornerShape(4.dp)).border(1.dp,
             BorderDark, RoundedCornerShape(4.dp)).padding(12.dp)) {
@@ -343,7 +351,7 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
         }
 
         if (scaleX > 1f || scaleY > 1f || offsetX != 0f || offsetY != 0f) {
-            Box(
+            Row(
                 modifier = Modifier.align(Alignment.TopEnd).padding(top = 16.dp, end = 160.dp)
                     .background(Color(0xFF1E2D4A).copy(alpha = 0.95f), RoundedCornerShape(4.dp))
                     .border(1.dp, AccentCyan, RoundedCornerShape(4.dp))
@@ -355,9 +363,11 @@ private fun ChartSection(viewModel: SpectrometerViewModel, modifier: Modifier = 
                         offsetY = 0f
                     }
                     .padding(horizontal = 12.dp, vertical = 8.dp),
-                contentAlignment = Alignment.Center
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(if (lang == AppLanguage.Chinese) "⤢ 恢复视图" else "⤢ Reset View", color = AccentCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Icon(Icons.Default.Refresh, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(12.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(if (lang == AppLanguage.Chinese) "恢复视图" else "Reset View", color = AccentCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -386,7 +396,7 @@ private fun InstrumentConfigSingleLinePanel(viewModel: SpectrometerViewModel, mo
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("📡", fontSize = 16.sp)
+                Icon(Icons.Default.Settings, contentDescription = null, tint = TextMuted, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Box(modifier = Modifier.border(1.dp, BorderDark, RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp)) {
                     Text(if (viewModel.isBoardOpened) "READY" else "OFFLINE", color = if (viewModel.isBoardOpened) AccentCyan else TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)

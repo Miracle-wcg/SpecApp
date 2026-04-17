@@ -6,6 +6,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,17 +17,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.wcg.app.specapp.ui.theme.AccentCyan
+import com.wcg.app.specapp.ui.theme.*
 import com.wcg.app.specapp.viewmodel.AppLanguage
 import com.wcg.app.specapp.viewmodel.AutoScanMode
-import com.wcg.app.specapp.ui.theme.BgDark
-import com.wcg.app.specapp.ui.theme.BorderDark
-import com.wcg.app.specapp.ui.theme.DangerRed
-import com.wcg.app.specapp.ui.theme.PanelBg
 import com.wcg.app.specapp.viewmodel.SpectrometerViewModel
-import com.wcg.app.specapp.ui.theme.TextMuted
-import com.wcg.app.specapp.ui.theme.TextWhite
-import com.wcg.app.specapp.ui.theme.WarningOrange
 
 @Composable
 fun AutoScanScreen(viewModel: SpectrometerViewModel) {
@@ -66,7 +61,11 @@ fun AutoScanScreen(viewModel: SpectrometerViewModel) {
                 border = BorderStroke(1.dp, BorderDark)
             ) {
                 Column(modifier = Modifier.padding(24.dp).fillMaxSize()) {
-                    Text(if (lang == AppLanguage.Chinese) "🛠️ 序列规则配置 / Rule Config" else "🛠️ Sequence Rule Config", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Build, contentDescription = null, tint = TextWhite, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(if (lang == AppLanguage.Chinese) "序列规则配置 / Rule Config" else "Sequence Rule Config", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
                     Spacer(modifier = Modifier.height(24.dp))
 
                     // 模式切换
@@ -120,10 +119,12 @@ fun AutoScanScreen(viewModel: SpectrometerViewModel) {
                     Spacer(modifier = Modifier.weight(1f))
 
                     // 状态提示
-                    Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1E2D4A), RoundedCornerShape(8.dp)).padding(16.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth().background(Color(0xFF1E2D4A), RoundedCornerShape(8.dp)).padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Info, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (lang == AppLanguage.Chinese) "⚠️ 提示：自动化采集产生的光谱数据将自动按时间戳后缀保存至您在【仪器设置】中配置的默认路径。"
-                            else "⚠️ NOTE: Spectra will be auto-saved with timestamps to the export directory defined in Setup.",
+                            text = if (lang == AppLanguage.Chinese) "提示：自动化采集产生的光谱数据将自动按时间戳后缀保存至您在【仪器设置】中配置的默认路径。"
+                            else "NOTE: Spectra will be auto-saved with timestamps to the export directory defined in Setup.",
                             color = AccentCyan, fontSize = 12.sp, lineHeight = 18.sp
                         )
                     }
@@ -138,7 +139,11 @@ fun AutoScanScreen(viewModel: SpectrometerViewModel) {
                 border = BorderStroke(1.dp, BorderDark)
             ) {
                 Column(modifier = Modifier.padding(24.dp).fillMaxSize()) {
-                    Text(if (lang == AppLanguage.Chinese) "🚀 执行中心 / Execution" else "🚀 Execution Center", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = null, tint = TextWhite, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(if (lang == AppLanguage.Chinese) "执行中心 / Execution" else "Execution Center", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
                     Spacer(modifier = Modifier.height(32.dp))
 
                     // 进度统计
@@ -158,12 +163,17 @@ fun AutoScanScreen(viewModel: SpectrometerViewModel) {
 
                     Spacer(modifier = Modifier.height(32.dp))
 
-                    val runningText = if (viewModel.isAutoSequenceRunning) {
-                        if (lang == AppLanguage.Chinese) "🟢 序列运行中..." else "🟢 Sequence Running..."
-                    } else {
-                        if (lang == AppLanguage.Chinese) "⏸ 待命就绪" else "⏸ Standby Ready"
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (viewModel.isAutoSequenceRunning) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(if (lang == AppLanguage.Chinese) "序列运行中..." else "Sequence Running...", color = Color(0xFF10B981), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        } else {
+                            Icon(Icons.Default.Stop, contentDescription = null, tint = TextMuted, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(if (lang == AppLanguage.Chinese) "待命就绪" else "Standby Ready", color = TextMuted, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
-                    Text(runningText, color = if (viewModel.isAutoSequenceRunning) Color(0xFF10B981) else TextMuted, fontSize = 14.sp, fontWeight = FontWeight.Bold)
 
                     Spacer(modifier = Modifier.weight(1f))
 
@@ -175,7 +185,9 @@ fun AutoScanScreen(viewModel: SpectrometerViewModel) {
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = AccentCyan, contentColor = BgDark)
                         ) {
-                            Text(if (lang == AppLanguage.Chinese) "▶ 启动自动化序列 / START SEQUENCE" else "▶ START AUTO SEQUENCE", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+                            Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(if (lang == AppLanguage.Chinese) "启动自动化序列 / START SEQUENCE" else "START AUTO SEQUENCE", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
                         }
                     } else {
                         Button(
@@ -184,7 +196,9 @@ fun AutoScanScreen(viewModel: SpectrometerViewModel) {
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = DangerRed, contentColor = TextWhite)
                         ) {
-                            Text(if (lang == AppLanguage.Chinese) "🛑 终止执行 / ABORT SEQUENCE" else "🛑 ABORT SEQUENCE", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+                            Icon(Icons.Default.Stop, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(if (lang == AppLanguage.Chinese) "终止执行 / ABORT SEQUENCE" else "ABORT SEQUENCE", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
                         }
                     }
                 }

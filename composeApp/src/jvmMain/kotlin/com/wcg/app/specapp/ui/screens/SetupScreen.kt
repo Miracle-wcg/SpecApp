@@ -8,26 +8,22 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.wcg.app.specapp.ui.theme.AccentCyan
+import com.wcg.app.specapp.ui.theme.*
 import com.wcg.app.specapp.viewmodel.AppLanguage
-import com.wcg.app.specapp.ui.theme.BgDark
-import com.wcg.app.specapp.ui.theme.BorderDark
-import com.wcg.app.specapp.ui.theme.DangerRed
 import com.wcg.app.specapp.ui.components.DarkTextField
-import com.wcg.app.specapp.ui.theme.PanelBg
 import com.wcg.app.specapp.viewmodel.SpectrometerViewModel
-import com.wcg.app.specapp.ui.theme.TextMuted
-import com.wcg.app.specapp.ui.theme.TextWhite
-import com.wcg.app.specapp.ui.theme.WarningOrange
 import java.io.File
 import javax.swing.JFileChooser
 
@@ -118,7 +114,8 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                     Column(modifier = Modifier.weight(1.2f), verticalArrangement = Arrangement.spacedBy(20.dp)) {
 
                         SetupCard(
-                            title = if (lang == AppLanguage.Chinese) "🌐 步骤 1：通讯配置" else "🌐 Step 1: TCP Configuration",
+                            icon = Icons.Default.Public,
+                            title = if (lang == AppLanguage.Chinese) "步骤 1：通讯配置" else "Step 1: TCP Configuration",
                             subtitle = "TCP COMMUNICATION"
                         ) {
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -151,7 +148,8 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                         }
 
                         SetupCard(
-                            title = if (lang == AppLanguage.Chinese) "📡 步骤 2：板卡握手" else "📡 Step 2: Board Initialization",
+                            icon = Icons.Default.SettingsInputComponent,
+                            title = if (lang == AppLanguage.Chinese) "步骤 2：板卡握手" else "Step 2: Board Initialization",
                             subtitle = "BOARD INIT"
                         ) {
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -185,7 +183,8 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                         }
 
                         SetupCard(
-                            title = if (lang == AppLanguage.Chinese) "☷ 步骤 3：扫描与光学参数" else "☷ Step 3: Parameters",
+                            icon = Icons.Default.Tune,
+                            title = if (lang == AppLanguage.Chinese) "步骤 3：扫描与光学参数" else "Step 3: Parameters",
                             subtitle = "OPTICS"
                         ) {
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -266,10 +265,10 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(20.dp)) {
 
                         SetupCard(
-                            title = if (lang == AppLanguage.Chinese) "🏥 仪器身份与健康监控" else "🏥 Identity & Health",
+                            icon = Icons.Default.MonitorHeart,
+                            title = if (lang == AppLanguage.Chinese) "仪器身份与健康监控" else "Identity & Health",
                             subtitle = "DIAGNOSTICS"
                         ) {
-                            // 改动点：只显示 IP 信息和板卡信息
                             InfoRow(if (lang == AppLanguage.Chinese) "服务器 IP" else "Server IP", serverIp)
                             val displayBoardName = viewModel.boardName.ifEmpty { if (lang == AppLanguage.Chinese) "未识别" else "Unknown" }
                             InfoRow(if (lang == AppLanguage.Chinese) "板卡名称" else "Board Name", displayBoardName)
@@ -283,7 +282,11 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                                     modifier = Modifier.height(28.dp),
                                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2B3648))
-                                ) { Text(if (lang == AppLanguage.Chinese) "⟲ 检查健康状态" else "⟲ CHECK HEALTH", fontSize = 10.sp) }
+                                ) {
+                                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(12.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(if (lang == AppLanguage.Chinese) "检查健康状态" else "CHECK HEALTH", fontSize = 10.sp)
+                                }
                             }
                             Spacer(modifier = Modifier.height(8.dp))
 
@@ -322,7 +325,8 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                         }
 
                         SetupCard(
-                            title = if (lang == AppLanguage.Chinese) "📁 存储与自动化" else "📁 Storage & Auto",
+                            icon = Icons.Default.Folder,
+                            title = if (lang == AppLanguage.Chinese) "存储与自动化" else "Storage & Auto",
                             subtitle = "EXPORT"
                         ) {
                             Text(if (lang == AppLanguage.Chinese) "默认导出路径" else "DEFAULT EXPORT PATH", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
@@ -352,7 +356,7 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2B3648)),
                                     modifier = Modifier.height(48.dp).width(48.dp),
                                     contentPadding = PaddingValues(0.dp)
-                                ) { Text("📁") }
+                                ) { Icon(Icons.Default.FolderOpen, contentDescription = null, tint = TextWhite) }
                             }
 
                             Spacer(modifier = Modifier.height(16.dp))
@@ -384,7 +388,7 @@ fun SetupScreen(viewModel: SpectrometerViewModel) {
 }
 
 @Composable
-fun SetupCard(title: String, subtitle: String, content: @Composable () -> Unit) {
+fun SetupCard(icon: ImageVector, title: String, subtitle: String, content: @Composable () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = PanelBg),
@@ -393,6 +397,8 @@ fun SetupCard(title: String, subtitle: String, content: @Composable () -> Unit) 
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.Bottom) {
+                Icon(icon, contentDescription = null, tint = AccentCyan, modifier = Modifier.size(20.dp).padding(bottom = 2.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(title, color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(subtitle, color = TextMuted, fontSize = 10.sp, modifier = Modifier.padding(bottom = 2.dp))
@@ -480,7 +486,7 @@ fun DarkDropdownField(
                 modifier = Modifier.fillMaxWidth(),
                 textStyle = LocalTextStyle.current.copy(fontSize = 12.sp),
                 trailingIcon = {
-                    Text("▾", color = if (expanded) AccentCyan else TextMuted, fontSize = 16.sp, modifier = Modifier.padding(end = 8.dp))
+                    Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = if (expanded) AccentCyan else TextMuted)
                 },
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = BorderDark,

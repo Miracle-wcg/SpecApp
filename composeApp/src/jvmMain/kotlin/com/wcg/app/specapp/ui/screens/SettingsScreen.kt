@@ -7,6 +7,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,7 +35,6 @@ import java.io.RandomAccessFile
 fun SettingsScreen(viewModel: SpectrometerViewModel) {
     val lang = viewModel.appLanguage
 
-    // 外层使用 Box，方便绝对定位底部弹出框
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             Row(verticalAlignment = Alignment.Bottom) {
@@ -42,7 +43,6 @@ fun SettingsScreen(viewModel: SpectrometerViewModel) {
             Spacer(modifier = Modifier.height(24.dp))
 
             Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                // 左侧：包含 状态面板、文件命名面板、引擎配置面板 (支持全局滑动)
                 Column(
                     modifier = Modifier
                         .weight(1.2f)
@@ -53,30 +53,26 @@ fun SettingsScreen(viewModel: SpectrometerViewModel) {
                     SystemStatusPanel(viewModel)
                     FileNamingPanel(viewModel)
                     AlgorithmEnginePanel(viewModel)
-
-                    // 底部留白
                     Spacer(modifier = Modifier.height(16.dp))
                 }
-                // 右侧：日志终端 (固定高度)
                 SystemLogPanel(viewModel, modifier = Modifier.weight(1.5f))
             }
         }
 
-        // 🌟 终极优化：无遮罩的底部滑出式提示框
         AnimatedVisibility(
             visible = viewModel.showDialog,
             enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
             exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 40.dp) // 悬浮于底部上方
+                .padding(bottom = 40.dp)
         ) {
             Card(
                 modifier = Modifier.widthIn(min = 320.dp, max = 450.dp),
                 colors = CardDefaults.cardColors(containerColor = PanelBg),
                 shape = RoundedCornerShape(12.dp),
                 border = BorderStroke(1.dp, BorderDark),
-                elevation = CardDefaults.cardElevation(16.dp) // 增加阴影，突出层级
+                elevation = CardDefaults.cardElevation(16.dp)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text(viewModel.dialogTitle, color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
@@ -84,7 +80,6 @@ fun SettingsScreen(viewModel: SpectrometerViewModel) {
                     Text(viewModel.dialogMessage, color = TextMuted, fontSize = 14.sp, lineHeight = 20.sp)
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // 靠右对齐的操作按钮
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                         Box(
                             modifier = Modifier
@@ -123,8 +118,10 @@ private fun SystemStatusPanel(viewModel: SpectrometerViewModel) {
         border = BorderStroke(1.dp, BorderDark)
     ) {
         Column(modifier = Modifier.padding(20.dp).fillMaxWidth()) {
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(if (lang == AppLanguage.Chinese) "🖥️ 运行状态与监控" else "🖥️ System Status", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Info, contentDescription = null, tint = TextWhite, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(if (lang == AppLanguage.Chinese) "运行状态与监控" else "System Status", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -189,7 +186,11 @@ private fun FileNamingPanel(viewModel: SpectrometerViewModel) {
     ) {
         Column(modifier = Modifier.padding(20.dp).fillMaxWidth()) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(if (lang == AppLanguage.Chinese) "📁 文件命名模板" else "📁 File Naming", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Folder, contentDescription = null, tint = TextWhite, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(if (lang == AppLanguage.Chinese) "文件命名模板" else "File Naming", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ActionButton(if (lang == AppLanguage.Chinese) "重置" else "Reset", Color(0xFF2B3648)) { viewModel.restoreDefaultNaming() }
@@ -256,7 +257,11 @@ private fun AlgorithmEnginePanel(viewModel: SpectrometerViewModel) {
     ) {
         Column(modifier = Modifier.padding(20.dp).fillMaxWidth()) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(if (lang == AppLanguage.Chinese) "🧠 ONNX 智能推理引擎" else "🧠 ONNX Engine", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Build, contentDescription = null, tint = TextWhite, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(if (lang == AppLanguage.Chinese) "ONNX 智能推理引擎" else "ONNX Engine", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
                 ActionButton(if (lang == AppLanguage.Chinese) "加载" else "Load", AccentCyan, BgDark) { viewModel.loadOnnxModels() }
             }
             Spacer(modifier = Modifier.height(20.dp))
@@ -276,7 +281,7 @@ private fun AlgorithmEnginePanel(viewModel: SpectrometerViewModel) {
                     modifier = Modifier.weight(1f)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                // 📂 按钮
+
                 Button(
                     onClick = {
                         val path = NativeDialogUtils.pickDirectory(if (lang == AppLanguage.Chinese) "选择 ONNX 模型所在文件夹" else "Choose ONNX Directory", viewModel.onnxModelDirectory)
@@ -286,24 +291,29 @@ private fun AlgorithmEnginePanel(viewModel: SpectrometerViewModel) {
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2B3648)),
                     modifier = Modifier.size(48.dp),
                     contentPadding = PaddingValues(0.dp)
-                ) { Text("📂", fontSize = 16.sp) }
+                ) { Icon(Icons.Default.FolderOpen, contentDescription = null, tint = TextWhite) }
 
                 Spacer(modifier = Modifier.width(8.dp))
-                // ⟲ 按钮
+
                 Button(
                     onClick = { viewModel.resetOnnxDirectory() },
                     shape = RoundedCornerShape(4.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2B3648)),
                     modifier = Modifier.size(48.dp),
                     contentPadding = PaddingValues(0.dp)
-                ) { Text("⟲", fontSize = 18.sp) }
+                ) { Icon(Icons.Default.Refresh, contentDescription = null, tint = TextWhite) }
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                if (lang == AppLanguage.Chinese) "⚠️ 提示：系统启动时会自动扫描项目默认 models 目录。如需更改，请指定新目录并点击【应用并加载】。"
-                else "⚠️ Note: Scans default models dir on startup. To change, select new dir and click Apply.",
-                color = WarningOrange, fontSize = 10.sp, lineHeight = 16.sp
-            )
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Warning, contentDescription = null, tint = WarningOrange, modifier = Modifier.size(12.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    if (lang == AppLanguage.Chinese) "提示：系统启动时会自动扫描项目默认 models 目录。如需更改，请指定新目录并点击【加载】。"
+                    else "Note: Scans default models dir on startup. To change, select new dir and click Load.",
+                    color = WarningOrange, fontSize = 10.sp, lineHeight = 16.sp
+                )
+            }
         }
     }
 }
@@ -365,16 +375,18 @@ private fun SystemLogPanel(viewModel: SpectrometerViewModel, modifier: Modifier 
     ) {
         Column(modifier = Modifier.padding(16.dp).fillMaxSize()) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(if (lang == AppLanguage.Chinese) "📄 实时执行日志" else "📄 Real-time Logs", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.List, contentDescription = null, tint = TextWhite, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
+                    Text(if (lang == AppLanguage.Chinese) "实时执行日志" else "Real-time Logs", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.width(16.dp))
                     Text(
                         text = logFile.absolutePath,
                         color = TextMuted,
                         fontSize = 10.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(bottom = 2.dp).widthIn(max = 200.dp)
+                        modifier = Modifier.widthIn(max = 200.dp)
                     )
                 }
 
